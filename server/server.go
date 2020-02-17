@@ -153,6 +153,15 @@ func (s Server) ListenAndServe() {
 			glog.Fatal(err)
 		}
 	}))
+
+	authzhandler := promhttp.InstrumentHandlerInFlight(inFlightGauge,
+		promhttp.InstrumentHandlerDuration(duration.MustCurryWith(prometheus.Labels{"authzhandler": "subjectaccessreviews"}),
+			promhttp.InstrumentHandlerCounter(counter,
+				promhttp.InstrumentHandlerResponseSize(responseSize.MustCurryWith(prometheus.Labels{"authzhandler": "subjectaccessreviews"}), s),
+			),
+		),
+	)
+	m.Post("/subjectaccessreviews", authzhandler)
 	srv := &http.Server{
 		Addr:         s.RecommendedOptions.SecureServing.SecureAddr,
 		ReadTimeout:  5 * time.Second,

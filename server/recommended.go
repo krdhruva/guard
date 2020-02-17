@@ -23,6 +23,7 @@ import (
 	"github.com/appscode/guard/auth/providers/google"
 	"github.com/appscode/guard/auth/providers/ldap"
 	"github.com/appscode/guard/auth/providers/token"
+	authz "github.com/appscode/guard/authz/provider"
 
 	"github.com/spf13/pflag"
 )
@@ -37,6 +38,7 @@ type RecommendedOptions struct {
 	Azure         azure.Options
 	LDAP          ldap.Options
 	AuthProvider  providers.AuthProviders
+	AuthzProvider authz.AuthzProvider
 }
 
 func NewRecommendedOptions() *RecommendedOptions {
@@ -69,6 +71,7 @@ func (o *RecommendedOptions) Validate() []error {
 	errs = append(errs, o.SecureServing.Validate()...)
 	errs = append(errs, o.NTP.Validate()...)
 	errs = append(errs, o.AuthProvider.Validate()...)
+	errs = append(errs, o.AuthzProvider.Validate()...)
 
 	if o.AuthProvider.Has(github.OrgType) {
 		errs = append(errs, o.Github.Validate()...)
