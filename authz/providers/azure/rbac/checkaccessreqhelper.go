@@ -72,6 +72,35 @@ type AzureRoleAssignment struct {
 	RoleAssignment
 }
 
+type Permission struct {
+	actions []string `json:"actions"`
+	noactions []string `json:"noactions"`
+	dataactions []string `json:"dataactions"`
+	nodataactions []string `json:"nodataactions"`
+}
+
+type Principal struct {
+	Id string `json:"Id"`
+	Type string `json:"Type"`
+}
+
+type DenyAssignment struct {
+	Id string `json:"Id"`
+	Name string `json:"Name"`
+	Description string `json:"Description"`
+	Permission
+	Scope string `json:"Scope"`
+	DoNotApplyToChildScopes bool `json:"DoNotApplyToChildScopes"`
+	principals Principals
+	excludeprincipals ExcludePrincipals
+	Condition string `json:"Condition"`
+	ConditionVersion string `json:"ConditionVersion"`
+}
+type AzureDenyAssignment struct {
+	IsSystemProtected string `json:"IsSystemProtected"`
+	DenyAssignment
+}
+
 type AuthorizationDecesion struct {
 	ActionId string `json:"ActionId"`
 	AccessDecesion
