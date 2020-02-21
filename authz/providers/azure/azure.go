@@ -46,7 +46,7 @@ type Authorizer struct {
 type authzInfo struct {
 	AADEndpoint string
 	MSRbacHost string
-	Issuer      string
+	Issuer      string	
 }
 
 func New(opts auth.Options) (authz.Interface, error) {
@@ -64,9 +64,9 @@ func New(opts auth.Options) (authz.Interface, error) {
 	
 	switch opts.AuthzMode {
 	case auth.ARCAuthzMode:
-		c.rbacClient, err = rbac.New(c.ClientID, c.ClientSecret, c.TenantID, c.UseGroupUID, authzInfoVal.AADEndpoint, authzInfoVal.MSRbacHost)
+		c.rbacClient, err = rbac.New(c.ClientID, c.ClientSecret, c.TenantID, c.UseGroupUID, authzInfoVal.AADEndpoint, authzInfoVal.MSRbacHost, auth.ARCAuthzMode, opts.ResourceId)
 	case auth.AKSAuthzMode:
-		c.rbacClient, err = rbac.NewWithAKS(c.ClientID, c.ClientSecret, c.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.MSRbacHost)
+		c.rbacClient, err = rbac.NewWithAKS(c.AKSTokenURL, c.TenantID, authzInfoVal.MSRbacHost, auth.AKSAuthzMode, opts.ResourceId)
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create ms rbac client")
@@ -80,6 +80,8 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 		resp.Allowed = false
 		resp.Reason = "no opinion"
 	}
+
+	resp := s.rbacClient.CheckAccess(request)
 	return resp, nil
 }
 
@@ -98,7 +100,7 @@ func getAuthInfo(environment, tenantID string, getMetadata func(string, string) 
 		return nil, errors.Wrap(err, "failed to get metadata for azure")
 	}
 
-	return &authInfo{
+	return &authzInfo{
 		AADEndpoint: env.ActiveDirectoryEndpoint,
 		MSRbacHost: env.ResourceManagerEndpoint,
 		Issuer:      metadata.Issuer,
