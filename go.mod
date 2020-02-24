@@ -86,4 +86,7 @@ replace (
 	sigs.k8s.io/kustomize => sigs.k8s.io/kustomize v2.0.3+incompatible
 	sigs.k8s.io/structured-merge-diff => sigs.k8s.io/structured-merge-diff v0.0.0-20190817042607-6149e4549fca
 	sigs.k8s.io/yaml => sigs.k8s.io/yaml v1.1.0
+	github.com/appscode/guard/authz/provider => ./authz/provider
+	github.com/appscode/guard/authz/provider/azure => ./authz/provider/azure
+	github.com/appscode/guard/authz/provider/azure/rbac => ./authz/provider/azure/rbac
 )
