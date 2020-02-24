@@ -68,7 +68,7 @@ func TestOBOTokenProvider(t *testing.T) {
 		defer stopTestServer(t, s)
 
 		r := NewOBOTokenProvider(clientID, clientSecret, s.URL, scope)
-		resp, err := r.Acquire(inputAccessToken)
+		resp, err := r.Acquire(TokenOptions{inputAccessToken, ""})
 		if err != nil {
 			t.Fatalf("refresh should not return error: %s", err)
 		}
@@ -115,7 +115,7 @@ func TestOBOTokenProvider(t *testing.T) {
 		defer stopTestServer(t, s)
 
 		r := NewOBOTokenProvider(clientID, clientSecret, s.URL, scope)
-		resp, err := r.Acquire(inputAccessToken)
+		resp, err := r.Acquire(TokenOptions{inputAccessToken, ""})
 		if err == nil {
 			t.Error("refresh should return error")
 		}

@@ -17,24 +17,19 @@ package rbac
 
 import (
 	"encoding/json"
-	"fmt"
-	"net/http"
-	"net/url"	
-	"time"
 
+	"github.com/golang/glog"
 	authzv1 "k8s.io/api/authorization/v1"
-	"github.com/appscode/guard/auth/providers/azure/graph"
-	jsoniter "github.com/json-iterator/go"
 )
 
 type SubjectInfoAttributes struct {
-	ObjectId string 					`json:"ObjectId"`
-	Groups []string 					`json:"Groups"`
-	ExpandGroupMembership bool			`json:"xms-pasrp-retrievegroupmemberships"`
+	ObjectId              string   `json:"ObjectId"`
+	Groups                []string `json:"Groups"`
+	ExpandGroupMembership bool     `json:"xms-pasrp-retrievegroupmemberships"`
 }
 
 type SubjectInfo struct {
-	Attributes SubjectInfoAttributes	`json:"Attributes"`
+	Attributes SubjectInfoAttributes `json:"Attributes"`
 }
 
 type AuthorizationEntity struct {
@@ -43,13 +38,13 @@ type AuthorizationEntity struct {
 
 type AuthorizationActionInfo struct {
 	AuthorizationEntity
-	IsDataAction bool	`json:"IsDataAction"`
+	IsDataAction bool `json:"IsDataAction"`
 }
 
 type CheckAccessRequest struct {
-	Subject SubjectInfo 				`json:"Subject"`
-	Actions []AuthorizationActionInfo	`json:"Actions"`   
-	Resource AuthorizationEntity		`json:"Resource"`
+	Subject  SubjectInfo               `json:"Subject"`
+	Actions  []AuthorizationActionInfo `json:"Actions"`
+	Resource AuthorizationEntity       `json:"Resource"`
 }
 
 type AccessDecesion struct {
@@ -57,14 +52,14 @@ type AccessDecesion struct {
 }
 
 type RoleAssignment struct {
-	Id string `json:"Id"`
+	Id               string `json:"Id"`
 	RoleDefinitionId string `json:"RoleDefinitionId"`
-	PrincipalId string `json:"PrincipalId"`
-	PrincipalType string `json:"PrincipalType"`
-	Scope string `json:"Scope"`
-	Condition string `json:"Condition"`
+	PrincipalId      string `json:"PrincipalId"`
+	PrincipalType    string `json:"PrincipalType"`
+	Scope            string `json:"Scope"`
+	Condition        string `json:"Condition"`
 	ConditionVersion string `json:"ConditionVersion"`
-	CanDelegate bool `json:"CanDelegate"`
+	CanDelegate      bool   `json:"CanDelegate"`
 }
 
 type AzureRoleAssignment struct {
@@ -73,28 +68,28 @@ type AzureRoleAssignment struct {
 }
 
 type Permission struct {
-	actions []string `json:"actions"`
-	noactions []string `json:"noactions"`
-	dataactions []string `json:"dataactions"`
+	actions       []string `json:"actions"`
+	noactions     []string `json:"noactions"`
+	dataactions   []string `json:"dataactions"`
 	nodataactions []string `json:"nodataactions"`
 }
 
 type Principal struct {
-	Id string `json:"Id"`
+	Id   string `json:"Id"`
 	Type string `json:"Type"`
 }
 
 type DenyAssignment struct {
-	Id string `json:"Id"`
-	Name string `json:"Name"`
+	Id          string `json:"Id"`
+	Name        string `json:"Name"`
 	Description string `json:"Description"`
 	Permission
-	Scope string `json:"Scope"`
-	DoNotApplyToChildScopes bool `json:"DoNotApplyToChildScopes"`
-	principals Principals
-	excludeprincipals ExcludePrincipals
-	Condition string `json:"Condition"`
-	ConditionVersion string `json:"ConditionVersion"`
+	Scope                   string `json:"Scope"`
+	DoNotApplyToChildScopes bool   `json:"DoNotApplyToChildScopes"`
+	principals              []Principal
+	excludeprincipals       []Principal
+	Condition               string `json:"Condition"`
+	ConditionVersion        string `json:"ConditionVersion"`
 }
 type AzureDenyAssignment struct {
 	IsSystemProtected string `json:"IsSystemProtected"`
@@ -104,11 +99,11 @@ type AzureDenyAssignment struct {
 type AuthorizationDecesion struct {
 	ActionId string `json:"ActionId"`
 	AccessDecesion
-	AzureRoleAssignment 
-	AzureDenyAssignment 
+	AzureRoleAssignment
+	AzureDenyAssignment
 }
 
-func getUserId(userName string) string {	
+func getUserId(userName string) string {
 	return "92634de3-03f6-4092-b41b-20616b11a464"
 }
 
@@ -122,45 +117,65 @@ func getActionName(verb string) string {
 		return "delete"
 	case "post":
 		return "action"
+	default:
+		return ""
 	}
 }
 
-func getDataAction(resourceAtt *authzv1.SubjectAccessReviewSpec.ResourceAttributes, clusterType string) AuthorizationActionInfo {
+func getDataAction(subRevReq *authzv1.SubjectAccessReviewSpec, clusterType string) AuthorizationActionInfo {
 	var authInfo AuthorizationActionInfo
-	authInfo.AuthorizationEntity.Id = MANAGED_CLUSTER + resourceAtt.Resource + getActionName(resourceAtt.verb)
+	if subRevReq.ResourceAttributes != nil {
+		authInfo.AuthorizationEntity.Id = clusterType + subRevReq.ResourceAttributes.Group + subRevReq.ResourceAttributes.Subresource + getActionName(subRevReq.ResourceAttributes.Verb)
+	} else if subRevReq.NonResourceAttributes != nil {
+		authInfo.AuthorizationEntity.Id = clusterType + subRevReq.NonResourceAttributes.Path + getActionName(subRevReq.NonResourceAttributes.Verb)
+	}
+
 	return authInfo
 }
 
-func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType, resourceId string) (string, error) {
+func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType, resourceId string) ([]byte, error) {
 	var checkaccessreq CheckAccessRequest
 	checkaccessreq.Subject.Attributes.ObjectId = getUserId(req.User)
 	checkaccessreq.Subject.Attributes.Groups = req.Groups
 	checkaccessreq.Subject.Attributes.ExpandGroupMembership = true
-
-	if req.ResourceAttributes != nil {
-		checkaccessreq.Actions[0] = getDataAction(req.ResourceAttributes, clusterType)
-	}
-
-	if req.NonResourceAttributes != nil {
-		checkaccessreq.Actions[0] = getDataAction(req.NonResourceAttributes)
-	}
-
+	checkaccessreq.Actions[0] = getDataAction(req, clusterType)
 	checkaccessreq.Resource.Id = resourceId
 
 	bytes, err := json.Marshal(checkaccessreq)
 	if err != nil {
-		return "", err
+		return nil, err
 	} else {
-		return string(bytes), nil
+		return bytes, nil
 	}
 }
 
-func getNameSpaceScoe(req *authzv1.SubjectAccessReviewSpec) string {
+func getNameSpaceScoe(req *authzv1.SubjectAccessReviewSpec) *string {
 	if req.ResourceAttributes != nil && req.ResourceAttributes.Namespace != "" {
-		return "/"+req.ResourceAttributes.Namespace
-	}	
+		str := "/" + req.ResourceAttributes.Namespace
+		// to-do this is wrong
+		return &str
+	}
+	return nil
 }
 
-func ConvertCheckAccessResponse() *authzv1.SubjectAccessReviewStatus { 
+func ConvertCheckAccessResponse(body []byte) *authzv1.SubjectAccessReviewStatus {
+	var res *authzv1.SubjectAccessReviewStatus
+	var response AuthorizationDecesion
+	err := json.Unmarshal(data, &response)
+	if err != nil {
+		glog.V(10).error("Failed to parse checkacccess response!")
+	}
 
+	if response.decesion == "Allowed" {
+		res.Allowed = true
+	} else if response.decesion == "Not Allowed" {
+		res.Allowed = false
+		res.Reason = "user does not have access to the resource"
+	} else if response.decesion == "Denied" {
+		res.Allowed = false
+		res.Denied = true
+		res.Reason = "user does not have access to the resource"
+	}
+
+	return res
 }

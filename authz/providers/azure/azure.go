@@ -76,6 +76,7 @@ func New(opts auth.Options) (authz.Interface, error) {
 
 func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.SubjectAccessReviewStatus, error) {
 	var resp authzv1.SubjectAccessReviewStatus
+	// check if user is service account
 	if (*request).UID != "" {
 		resp.Allowed = false
 		resp.Reason = "no opinion"

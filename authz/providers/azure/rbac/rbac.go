@@ -15,23 +15,30 @@ limitations under the License.
 */
 package rbac
 
-import (
+import (	
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
+	"strconv"
 	"time"
 
+	"github.com/appscode/guard/auth/providers/azure/graph"
+	"github.com/golang/glog"
+	"github.com/moul/http2curl"
+	"github.com/pkg/errors"
 	authzv1 "k8s.io/api/authorization/v1"
-	"github.com/appscode/guard/auth/providers/azure/graph"	
-	jsoniter "github.com/json-iterator/go"
 )
 
 // These are the base URL endpoints for MS graph
 var (
-	json = jsoniter.ConfigCompatibleWithStandardLibrary
-	MANAGED_CLUSTER = "Microsoft.ContainerService/managedClusters/"
+	MANAGED_CLUSTER   = "Microsoft.ContainerService/managedClusters/"
 	CONNECTED_CLUSTER = "Microsoft.Kubernetes/connectedClusters/"
+)
+
+const (
+	expiryDelta = 60 * time.Second
 )
 
 // UserInfo allows you to get user data from MS Graph
@@ -42,9 +49,9 @@ type AccessInfo struct {
 	// These allow us to mock out the URL for testing
 	apiURL *url.URL
 
-	accessAllowed bool
-	tokenProvider graph.TokenProvider
-	clusterType string
+	accessAllowed   bool
+	tokenProvider   graph.TokenProvider
+	clusterType     string
 	azureResourceId string
 }
 
@@ -54,10 +61,9 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, useGroup
 		headers: http.Header{
 			"Content-Type": []string{"application/json"},
 		},
-		apiURL:        rbacURL,
-		tokenProvider: tokenProvider,		
-		resourceId: resourceId
-	}
+		apiURL:          rbacURL,
+		tokenProvider:   tokenProvider,
+		azureResourceId: resourceId}
 
 	if clsuterType == "arc" {
 		u.clusterType = CONNECTED_CLUSTER
@@ -78,68 +84,99 @@ func New(clientID, clientSecret, tenantID string, useGroupUID bool, aadEndpoint,
 		fmt.Sprintf("%s%s/oauth2/v2.0/token", aadEndpoint, tenantID),
 		fmt.Sprintf("https://%s/.default", msrbacHost))
 
-	return newAccessInfo(tokenProvider, rbacURL, useGroupUID, clusterType)
+	return newAccessInfo(tokenProvider, rbacURL, useGroupUID, clusterType, resourceId)
 }
 
-func NewWithAKS(tokenURL, tenantID, msrbacHost, clusterType string) (*AccessInfo, error) {
+func NewWithAKS(tokenURL, tenantID, msrbacHost, clusterType, resourceId string) (*AccessInfo, error) {
 	rbacEndpoint := "https://" + msrbacHost + "/"
 	rbacURL, _ := url.Parse(rbacEndpoint)
 
 	tokenProvider := graph.NewAKSTokenProvider(tokenURL, tenantID)
 
-	return newAccessInfo(tokenProvider, rbacURL, true, clusterType)
+	return newAccessInfo(tokenProvider, rbacURL, true, clusterType, resourceId)
+}
+
+func (a *AccessInfo) RefreshToken() error { 
+	resp, err := a.tokenProvider.Acquire()
+	if err != nil {
+		return errors.Errorf("%s: failed to refresh token: %s", a.tokenProvider.Name(), err)
+	}
+
+	// Set the authorization headers for future requests
+	a.headers.Set("Authorization", fmt.Sprintf("Bearer %s", resp.Token))
+	expIn := time.Duration(resp.Expires) * time.Second
+	a.expires = time.Now().Add(expIn - expiryDelta)
+
+	return nil
+}
+
+func (a *AccessInfo) IsTokenExpired() bool {
+	if a.expires.Before(time.Now()) {
+		return true
+	} else {
+		return false
+	}	
 }
 
 func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*authzv1.SubjectAccessReviewStatus, error) {
-	req := PrepareCheckAccessRequest(request, MANAGED_CLUSTER, azureResourceId)
+	checkAccessBody, err := PrepareCheckAccessRequest(request, a.clusterType, a.azureResourceId)
+	if err != nil {
+		return nil, errors.Wrap(err, "error creating check access request")
+	}
 
 	checkAccessURL := *a.apiURL
-	// Append the path for azure cluster resource id 
-	checkAccessURL.Path = path.Join(checkAccessURL.Path, azureResourceId, getNameSpaceScoe(request), "/providers/Microsoft.Authorization/checkaccess?api-version=2018-09-01-preview"))
+	// Append the path for azure cluster resource id
+	checkAccessURL.Path = path.Join(checkAccessURL.Path, a.azureResourceId)
+	namespace := getNameSpaceScoe(request)
+	if namespace != nil {
+		var namespaceVal string = *namespace
+		checkAccessURL.Path = path.Join(namespaceVal)
+	}
 
-	// The body being sent makes sure that all groups are returned, not just security groups
-	req, err := http.NewRequest(http.MethodPost, checkAccessURL.String(), strings.NewReader(`{"securityEnabledOnly": false}`))
+	checkAccessURL.Path = path.Join("/providers/Microsoft.Authorization/checkaccess?api-version=2018-09-01-preview")
+	
+	if a.IsTokenExpired() {
+		a.RefreshToken()
+	}
+
+	req, err := http.NewRequest(http.MethodPost, checkAccessURL.String(), checkAccessBody)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating check access request")
 	}
 	// Set the auth headers for the request
-	req.Header = u.headers
+	req.Header = a.headers
 
 	if glog.V(10) {
 		cmd, _ := http2curl.GetCurlCommand(req)
 		glog.V(10).Infoln(cmd)
 	}
 
-	resp, err := u.client.Do(req)
+	resp, err := a.client.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "error getting check access result")
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		data, _ := ioutil.ReadAll(resp.Body)
+	if resp.StatusCode == http.StatusTooManyRequests {
+		a.client.CloseIdleConnections()
+		if glog.V(10) {
+			glog.V(10).Infoln("ARM thorttling. Moving to new instance!")
+	}
+
+	data, _ := ioutil.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {		
 		return nil, errors.Errorf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
+	} else {
+		remaining := resp.Header.Get("x-ms-ratelimit-remaining-subscription-reads")
+		count, _ := strconv.Atoi(remaining)
+		if count < 2000 {
+			if glog.V(10) {
+				glog.V(10).Infoln("Moving to another ARM instance!")
+			a.client.CloseIdleConnections()			
+		}
 	}
-
+	
 	// Decode response and prepare k8s response
-	var objects = ObjectList{}
-	err = json.NewDecoder(resp.Body).Decode(&objects)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to decode response for request %s", req.URL.Path)
-	}
+	k8sres := ConvertCheckAccessResponse(data)
+	return k8sres
 }
-
-func (a *AccessInfo) RefreshToken() error {
-	resp, err := a.tokenProvider.Acquire()
-	if err != nil {
-		return errors.Errorf("%s: failed to refresh token: %s", u.tokenProvider.Name(), err)
-	}
-
-	// Set the authorization headers for future requests
-	u.headers.Set("Authorization", fmt.Sprintf("Bearer %s", resp.Token))
-	expIn := time.Duration(resp.Expires) * time.Second
-	u.expires = time.Now().Add(expIn - expiryDelta)
-
-	return nil
-}
-

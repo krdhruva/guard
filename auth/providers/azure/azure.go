@@ -79,7 +79,7 @@ func New(opts Options) (auth.Interface, error) {
 		Options: opts,
 		ctx:     context.Background(),
 	}
-	authInfoVal, err := getAuthInfo(c.Environment, c.TenantID, getMetadata)
+	authInfoVal, err := getAuthInfo(c.Environment, c.TenantID, GetMetadata)
 	if err != nil {
 		return nil, err
 	}
