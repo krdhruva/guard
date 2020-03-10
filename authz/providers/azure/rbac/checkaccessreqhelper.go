@@ -161,9 +161,9 @@ func getNameSpaceScoe(req *authzv1.SubjectAccessReviewSpec) *string {
 func ConvertCheckAccessResponse(body []byte) *authzv1.SubjectAccessReviewStatus {
 	var res *authzv1.SubjectAccessReviewStatus
 	var response AuthorizationDecesion
-	err := json.Unmarshal(data, &response)
+	err := json.Unmarshal(body, &response)
 	if err != nil {
-		glog.V(10).error("Failed to parse checkacccess response!")
+		glog.V(10).Infoln("Failed to parse checkacccess response!")
 	}
 
 	if response.decesion == "Allowed" {

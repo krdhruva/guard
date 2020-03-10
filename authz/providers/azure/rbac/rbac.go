@@ -16,6 +16,7 @@ limitations under the License.
 package rbac
 
 import (	
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -97,7 +98,7 @@ func NewWithAKS(tokenURL, tenantID, msrbacHost, clusterType, resourceId string) 
 }
 
 func (a *AccessInfo) RefreshToken() error { 
-	resp, err := a.tokenProvider.Acquire()
+	resp, err := a.tokenProvider.Acquire(graph.TokenOptions{"", ""})
 	if err != nil {
 		return errors.Errorf("%s: failed to refresh token: %s", a.tokenProvider.Name(), err)
 	}
@@ -139,7 +140,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 		a.RefreshToken()
 	}
 
-	req, err := http.NewRequest(http.MethodPost, checkAccessURL.String(), checkAccessBody)
+	req, err := http.NewRequest(http.MethodPost, checkAccessURL.String(), bytes.NewReader(checkAccessBody))
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating check access request")
 	}
@@ -161,6 +162,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 		a.client.CloseIdleConnections()
 		if glog.V(10) {
 			glog.V(10).Infoln("ARM thorttling. Moving to new instance!")
+		}
 	}
 
 	data, _ := ioutil.ReadAll(resp.Body)
@@ -175,8 +177,9 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 			a.client.CloseIdleConnections()			
 		}
 	}
+}
 	
 	// Decode response and prepare k8s response
 	k8sres := ConvertCheckAccessResponse(data)
-	return k8sres
+	return k8sres,nil
 }

@@ -16,11 +16,13 @@ limitations under the License.
 package azure
 
 import (
+	"fmt"
 	"os"
-
 	authOpt "github.com/appscode/guard/auth/providers/azure"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
+	apps "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
@@ -36,12 +38,15 @@ type Options struct {
 
 func NewOptions() Options {
 	return Options{
-		ClientSecret: os.Getenv("AZURE_CLIENT_SECRET"),
-		UseGroupUID:  true,
-	}
+		authOpt.Options{
+			ClientSecret: os.Getenv("AZURE_CLIENT_SECRET"),
+			UseGroupUID:  true,
+		},
+		"", "" }
 }
 
 func (o *Options) AddFlags(fs *pflag.FlagSet) {
+	o.Options.AddFlags(fs)
 	fs.StringVar(&o.AuthzMode, "azure.authz-mode", "", "authz mode to call RBAC api, valid value is either aks or arc")
 	fs.StringVar(&o.ResourceId, "azure.resource-id", "", "azure cluster resource id (//subscription/<subName>/resourcegroups/<RGname>/providers/Microsoft.ContainerService/managedClusters/<clustername> for AKS or //subscription/<subName>/resourcegroups/<RGname>/providers/Microsoft.Kubernetes/connectedClusters/<clustername> for arc) to be used as scope for RBAC check")
 }
@@ -57,15 +62,15 @@ func (o *Options) Validate() []error {
 		errs = append(errs, errors.New("azure.resource-id must be non-empty for authrization"))
 	}
 
-	if o.AuthzMode == AKSAuthMode && o.AKSTokenURL == "" {
+	if o.AuthzMode == AKSAuthzMode && o.AKSTokenURL == "" {
 		errs = append(errs, errors.New("azure.aks-token-url must be non-empty"))
 	}
 
 	if o.AuthzMode == ARCAuthzMode {
-		if authOpt.ClientSecret == "" {
+		if o.ClientSecret == "" {
 			errs = append(errs, errors.New("azure.client-secret must be non-empty"))
 		}
-		if authOpt.ClientID == "" {
+		if o.ClientID == "" {
 			errs = append(errs, errors.New("azure.client-id must be non-empty"))
 		}
 	}

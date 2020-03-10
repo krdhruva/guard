@@ -16,12 +16,13 @@ limitations under the License.
 package azure
 
 import (
-	"errors"
 	"context"
 
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/appscode/guard/authz"
 	"github.com/appscode/guard/authz/providers/azure/rbac"
+	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	auth "github.com/appscode/guard/auth/providers/azure"
 	authzv1 "k8s.io/api/authorization/v1"
 
@@ -38,7 +39,7 @@ func init() {
 }
 
 type Authorizer struct {
-	auth.Options
+	Options
 	rbacClient *rbac.AccessInfo
 	ctx         context.Context
 }
@@ -49,7 +50,7 @@ type authzInfo struct {
 	Issuer      string	
 }
 
-func New(opts auth.Options) (authz.Interface, error) {
+func New(opts Options) (authz.Interface, error) {
 	c := &Authorizer{
 		Options: opts,
 		ctx:     context.Background(),
@@ -63,10 +64,10 @@ func New(opts auth.Options) (authz.Interface, error) {
 	glog.V(3).Infof("Using issuer url: %v", authzInfoVal.Issuer)
 	
 	switch opts.AuthzMode {
-	case auth.ARCAuthzMode:
-		c.rbacClient, err = rbac.New(c.ClientID, c.ClientSecret, c.TenantID, c.UseGroupUID, authzInfoVal.AADEndpoint, authzInfoVal.MSRbacHost, auth.ARCAuthzMode, opts.ResourceId)
-	case auth.AKSAuthzMode:
-		c.rbacClient, err = rbac.NewWithAKS(c.AKSTokenURL, c.TenantID, authzInfoVal.MSRbacHost, auth.AKSAuthzMode, opts.ResourceId)
+	case ARCAuthzMode:
+		c.rbacClient, err = rbac.New(c.ClientID, c.ClientSecret, c.TenantID, c.UseGroupUID, authzInfoVal.AADEndpoint, authzInfoVal.MSRbacHost, ARCAuthzMode, opts.ResourceId)
+	case AKSAuthzMode:
+		c.rbacClient, err = rbac.NewWithAKS(c.AKSTokenURL, c.TenantID, authzInfoVal.MSRbacHost, AKSAuthzMode, opts.ResourceId)
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create ms rbac client")
@@ -75,18 +76,19 @@ func New(opts auth.Options) (authz.Interface, error) {
 }
 
 func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.SubjectAccessReviewStatus, error) {
-	var resp authzv1.SubjectAccessReviewStatus
 	// check if user is service account
 	if (*request).UID != "" {
+		var resp authzv1.SubjectAccessReviewStatus
 		resp.Allowed = false
 		resp.Reason = "no opinion"
+		return &resp,nil
 	}
 
-	resp := s.rbacClient.CheckAccess(request)
-	return resp, nil
+	response, _ := s.rbacClient.CheckAccess(request)
+	return response, nil
 }
 
-func getAuthInfo(environment, tenantID string, getMetadata func(string, string) (*metadataJSON, error)) (*authzInfo, error) {
+func getAuthInfo(environment, tenantID string, getMetadata func(string, string) (*auth.MetadataJSON, error)) (*authzInfo, error) {
 	var err error
 	env := azure.PublicCloud
 	if environment != "" {

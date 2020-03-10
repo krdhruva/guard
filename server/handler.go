@@ -26,10 +26,12 @@ import (
 	"github.com/appscode/guard/auth/providers/google"
 	"github.com/appscode/guard/auth/providers/ldap"
 	"github.com/appscode/guard/auth/providers/token"
-
+	"github.com/appscode/guard/authz"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	authv1 "k8s.io/api/authentication/v1"
+	authzv1 "k8s.io/api/authorization/v1"
+	azureAuthz "github.com/appscode/guard/authz/providers/azure"
 )
 
 func (s Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -87,6 +89,50 @@ func (s Server) getAuthProviderClient(org, commonName string) (auth.Interface, e
 		return azure.New(s.RecommendedOptions.Azure)
 	case ldap.OrgType:
 		return ldap.New(s.RecommendedOptions.LDAP), nil
+	}
+
+	return nil, errors.Errorf("Client is using unknown organization %s", org)
+}
+
+func (s Server) Authzhandler(w http.ResponseWriter, req *http.Request) {
+	if req.TLS == nil || len(req.TLS.PeerCertificates) == 0 {
+		write(w, nil, WithCode(errors.New("Missing client certificate"), http.StatusBadRequest))
+		return
+	}
+	crt := req.TLS.PeerCertificates[0]
+	if len(crt.Subject.Organization) == 0 {
+		write(w, nil, WithCode(errors.New("Client certificate is missing organization"), http.StatusBadRequest))
+		return
+	}
+	org := crt.Subject.Organization[0]
+	glog.Infof("Received subject access review request for %s/%s", org, crt.Subject.CommonName)
+
+	data := authzv1.SubjectAccessReview{}
+	err := json.NewDecoder(req.Body).Decode(&data)
+	if err != nil {
+		write(w, nil, WithCode(errors.Wrap(err, "Failed to parse request"), http.StatusBadRequest))
+		return
+	}
+
+	if !s.RecommendedOptions.AuthzProvider.Has(org) {
+		write(w, nil, WithCode(errors.Errorf("guard does not provide service for %v", org), http.StatusBadRequest))
+		return
+	}
+
+	client, err := s.getAuthzProviderClient(org, crt.Subject.CommonName)
+	if err != nil {
+		write(w, nil, err)
+		return
+	}
+
+	resp, err := client.Check(&data.Spec)
+	glog.Infof(resp.Reason)
+}
+
+func (s Server) getAuthzProviderClient(org, commonName string) (authz.Interface, error) {
+	switch strings.ToLower(org) {
+	case azureAuthz.OrgType:
+		return azureAuthz.New(s.RecommendedOptions.AzureAuth)
 	}
 
 	return nil, errors.Errorf("Client is using unknown organization %s", org)

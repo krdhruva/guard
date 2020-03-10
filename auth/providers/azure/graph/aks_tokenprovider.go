@@ -49,7 +49,7 @@ func (u *aksTokenProvider) Acquire(token TokenOptions) (AuthResponse, error) {
 		AccessToken string `json:"accessToken,omitempty"`
 	}{
 		TenantID:    u.tenantID,
-		AccessToken: token.token,
+		AccessToken: token.Token,
 	}
 
 	buf := new(bytes.Buffer)
@@ -60,9 +60,9 @@ func (u *aksTokenProvider) Acquire(token TokenOptions) (AuthResponse, error) {
 	if err != nil {
 		return authResp, errors.Wrap(err, "failed to create request")
 	}
-	if token.tokenType != "" {
+	if token.TokenType != "" {
 		params := req.URL.Query()
-		params.Add("tokenType", token.tokenType)
+		params.Add("tokenType", token.TokenType)
 		req.URL.RawQuery = params.Encode()
 	}
 

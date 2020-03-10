@@ -16,8 +16,8 @@ limitations under the License.
 package graph
 
 type TokenOptions struct {
-	token     string
-	tokenType string
+	Token     string
+	TokenType string
 }
 
 // TokenProvider is an interface to obtain token for MS Graph api

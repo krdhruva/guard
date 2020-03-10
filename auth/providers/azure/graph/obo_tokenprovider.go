@@ -55,7 +55,7 @@ func (u *oboTokenProvider) Acquire(token TokenOptions) (AuthResponse, error) {
 	form := url.Values{}
 	form.Set("client_id", u.clientID)
 	form.Set("client_secret", u.clientSecret)
-	form.Set("assertion", token.token)
+	form.Set("assertion", token.Token)
 	form.Set("requested_token_use", "on_behalf_of")
 	form.Set("scope", u.scope)
 	form.Set("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer")

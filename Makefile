@@ -15,7 +15,7 @@
 
 SHELL=/bin/bash -o pipefail
 
-GO_PKG   := github.com/appscode
+GO_PKG   := github.com/krdhruva
 REPO     := $(notdir $(shell pwd))
 BIN      := guard
 COMPRESS ?=no
@@ -99,7 +99,6 @@ all: fmt build
 
 build-%:
 	@$(MAKE) build                        \
-	    --no-print-directory              \
 	    GOOS=$(firstword $(subst _, ,$*)) \
 	    GOARCH=$(lastword $(subst _, ,$*))
 

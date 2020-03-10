@@ -43,7 +43,7 @@ func (a *AuthzProviders) Validate() []error {
 	}*/
 
 	for _, p := range a.Providers {
-		if !auth.SupportedOrgs.Has(p) {
+		if !authz.SupportedOrgs.Has(p) {
 			errs = append(errs, errors.Errorf("provider %s not supported", p))
 		}
 	}
