@@ -17,6 +17,7 @@ package rbac
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/golang/glog"
 	authzv1 "k8s.io/api/authorization/v1"
@@ -164,6 +165,7 @@ func ConvertCheckAccessResponse(body []byte) *authzv1.SubjectAccessReviewStatus 
 	err := json.Unmarshal(body, &response)
 	if err != nil {
 		glog.V(10).Infoln("Failed to parse checkacccess response!")
+		fmt.Printf("failed to parse checkaccess response!%s", err.Error())
 	}
 
 	if response.decesion == "Allowed" {

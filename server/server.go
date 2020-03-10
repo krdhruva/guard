@@ -19,6 +19,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"io/ioutil"
+	"fmt"
 	"net/http"
 	_ "net/http/pprof"
 	"path/filepath"
