@@ -67,9 +67,9 @@ replace (
 	github.com/Azure/go-autorest/autorest/validation => github.com/Azure/go-autorest/autorest/validation v0.1.0
 	github.com/Azure/go-autorest/logger => github.com/Azure/go-autorest/logger v0.1.0
 	github.com/Azure/go-autorest/tracing => github.com/Azure/go-autorest/tracing v0.5.0
-	github.com/appscode/guard => /home/krupesh/gopath/src/github.com/krdhruva/guard
-	github.com/appscode/guard/authz/providers => /home/krupesh/gopath/src/github.com/krdhruva/guard/authz/providers
-	github.com/appscode/guard/authz/providers/azure => /home/krupesh/gopath/src/github.com/krdhruva/guard/authz/providers/azure
+	github.com/appscode/guard => ./
+	github.com/appscode/guard/authz/providers => ./authz/providers
+	github.com/appscode/guard/authz/providers/azure => ./authz/providers/azure
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.2
 	google.golang.org/api => google.golang.org/api v0.6.1-0.20190607001116-5213b8090861
 	k8s.io/api => k8s.io/api v0.0.0-20191114100352-16d7abae0d2a
