@@ -126,7 +126,7 @@ func getActionName(verb string) string {
 func getDataAction(subRevReq *authzv1.SubjectAccessReviewSpec, clusterType string) AuthorizationActionInfo {
 	var authInfo AuthorizationActionInfo
 	if subRevReq.ResourceAttributes != nil {
-		authInfo.AuthorizationEntity.Id = clusterType + subRevReq.ResourceAttributes.Group + subRevReq.ResourceAttributes.Subresource + getActionName(subRevReq.ResourceAttributes.Verb)
+		authInfo.AuthorizationEntity.Id = clusterType + subRevReq.ResourceAttributes.Group  +  "/" + subRevReq.ResourceAttributes.Resource + getActionName(subRevReq.ResourceAttributes.Verb)
 	} else if subRevReq.NonResourceAttributes != nil {
 		authInfo.AuthorizationEntity.Id = clusterType + subRevReq.NonResourceAttributes.Path + getActionName(subRevReq.NonResourceAttributes.Verb)
 	}
@@ -157,6 +157,9 @@ func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType
 		fmt.Println(err)
 		return nil, err
 	} else {
+		var jsonStr interface{}
+		json.Unmarshal([]byte(bytes), &jsonStr)
+		fmt.Println(jsonStr)
 		return bytes, nil
 	}
 }
