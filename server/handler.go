@@ -131,7 +131,7 @@ func (s Server) Authzhandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	resp, err := client.Check(&data.Spec)
-	fmt.Printf("auth response %s%s", resp.Allowed, resp.Reason)
+	fmt.Printf("auth response allowed:%d denied:%d, reason:%s", resp.Allowed, resp.Denied, resp.Reason)
 	glog.Infof(resp.Reason)
 }
 
