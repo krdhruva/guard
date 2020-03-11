@@ -67,6 +67,7 @@ func (o *RecommendedOptions) AddFlags(fs *pflag.FlagSet) {
 	o.Google.AddFlags(fs)
 	o.Azure.AddFlags(fs)
 	o.LDAP.AddFlags(fs)
+	o.AuthzProvider.AddFlags(fs)
 	o.AzureAuthz.AddFlags(fs)
 }
 
