@@ -81,6 +81,7 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 		var resp authzv1.SubjectAccessReviewStatus
 		resp.Allowed = false
 		resp.Reason = "no opinion"
+		glog.V(3).Infof("returning no op to service accounts")
 		return &resp,nil
 	}
 

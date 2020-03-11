@@ -24,7 +24,7 @@ import (
 	"github.com/appscode/guard/auth/providers/ldap"
 	"github.com/appscode/guard/auth/providers/token"
 	authz "github.com/appscode/guard/authz/providers"
-	authzAzure "github.com/appscode/guard/authz/providers/azure"
+	azureAuthz "github.com/appscode/guard/authz/providers/azure"
 
 	"github.com/spf13/pflag"
 )
@@ -38,7 +38,7 @@ type RecommendedOptions struct {
 	Google        google.Options
 	Azure         azure.Options
 	LDAP          ldap.Options
-	AzureAuth     authzAzure.Options
+	AzureAuthz     azureAuthz.Options
 	AuthProvider  providers.AuthProviders
 	AuthzProvider authz.AuthzProviders
 }
@@ -53,6 +53,7 @@ func NewRecommendedOptions() *RecommendedOptions {
 		Token:         token.NewOptions(),
 		Google:        google.NewOptions(),
 		LDAP:          ldap.NewOptions(),
+		AzureAuthz:    azureAuthz.NewOptions(),
 	}
 }
 
@@ -66,6 +67,7 @@ func (o *RecommendedOptions) AddFlags(fs *pflag.FlagSet) {
 	o.Google.AddFlags(fs)
 	o.Azure.AddFlags(fs)
 	o.LDAP.AddFlags(fs)
+	o.AzureAuthz.AddFlags(fs)
 }
 
 func (o *RecommendedOptions) Validate() []error {
@@ -92,6 +94,9 @@ func (o *RecommendedOptions) Validate() []error {
 	}
 	if o.AuthProvider.Has(ldap.OrgType) {
 		errs = append(errs, o.LDAP.Validate()...)
+	}
+	if o.AuthzProvider.Has(azureAuthz.OrgType) {
+		errs = append(errs, o.AzureAuthz.Validate()...)
 	}
 
 	return errs
