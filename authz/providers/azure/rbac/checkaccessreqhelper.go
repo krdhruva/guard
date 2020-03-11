@@ -160,8 +160,10 @@ func getNameSpaceScoe(req *authzv1.SubjectAccessReviewSpec) *string {
 }
 
 func ConvertCheckAccessResponse(body []byte) *authzv1.SubjectAccessReviewStatus {
-	var res *authzv1.SubjectAccessReviewStatus
 	var response AuthorizationDecesion
+	var allowed bool
+	var denied bool
+	var verdict string
 	err := json.Unmarshal(body, &response)
 	if err != nil {
 		glog.V(10).Infoln("Failed to parse checkacccess response!")
@@ -169,15 +171,17 @@ func ConvertCheckAccessResponse(body []byte) *authzv1.SubjectAccessReviewStatus 
 	}
 
 	if response.decesion == "Allowed" {
-		res.Allowed = true
+		allowed = true
 	} else if response.decesion == "Not Allowed" {
-		res.Allowed = false
-		res.Reason = "user does not have access to the resource"
+		allowed = false
+		verdict = "user does not have access to the resource"
 	} else if response.decesion == "Denied" {
-		res.Allowed = false
-		res.Denied = true
-		res.Reason = "user does not have access to the resource"
+		allowed = false
+		denied = true
+		verdict = "user does not have access to the resource"
 	}
 
-	return res
+	fmt.Printf("allowed is %d, denied is %d, reason %s", allowed, denied, verdict)
+
+	return &authzv1.SubjectAccessReviewStatus{Allowed: allowed, Reason: verdict, Denied:denied}
 }

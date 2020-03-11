@@ -17,6 +17,7 @@ package azure
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/appscode/guard/authz"
@@ -25,8 +26,6 @@ import (
 	"github.com/pkg/errors"
 	auth "github.com/appscode/guard/auth/providers/azure"
 	authzv1 "k8s.io/api/authorization/v1"
-
-	
 )
 
 
@@ -77,14 +76,14 @@ func New(opts Options, authOpts auth.Options) (authz.Interface, error) {
 
 func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.SubjectAccessReviewStatus, error) {
 	// check if user is service account
+	fmt.Printf("call is for UID:%s,user:%s",(*request).UID, (*request).User)
 	if (*request).UID != "" {
-		var resp authzv1.SubjectAccessReviewStatus
-		resp.Allowed = false
-		resp.Reason = "no opinion"
 		glog.V(3).Infof("returning no op to service accounts")
-		return &resp,nil
+		fmt.Println("returning no op to sa")
+		return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "no opinion"}, nil
 	}
-
+	fmt.Println("returning resonse for user")
+	
 	response, _ := s.rbacClient.CheckAccess(request)
 	return response, nil
 }
