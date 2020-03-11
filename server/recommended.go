@@ -96,7 +96,7 @@ func (o *RecommendedOptions) Validate() []error {
 		errs = append(errs, o.LDAP.Validate()...)
 	}
 	if o.AuthzProvider.Has(azureAuthz.OrgType) {
-		errs = append(errs, o.AzureAuthz.Validate()...)
+		errs = append(errs, o.AzureAuthz.Validate(o.Azure)...)
 	}
 
 	return errs
