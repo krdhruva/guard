@@ -139,7 +139,7 @@ func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType
 		fmt.Println("KD: req nil")
 	}
 
-	var checkaccessreq CheckAccessRequest
+	checkaccessreq := &CheckAccessRequest{}
 	checkaccessreq.Subject.Attributes.ObjectId = getUserId(req.User)
 	checkaccessreq.Subject.Attributes.Groups = req.Groups
 	checkaccessreq.Subject.Attributes.ExpandGroupMembership = true
