@@ -58,9 +58,11 @@ func New(opts Options, authOpts auth.Options) (authz.Interface, error) {
 
 	authzInfoVal, err := getAuthInfo(authOpts.Environment, authOpts.TenantID, auth.GetMetadata)
 	if err != nil {
+		fmt.Printf("error in getAuthInfo %s",err)
 		return nil, err
 	}
 
+	fmt.Printf("getAuthInfo AADEndpoint:%s,rbachost:%s,issuer:%s",authzInfoVal.AADEndpoint, authzInfoVal.MSRbacHost,authzInfoVal.Issuer)
 	glog.V(3).Infof("Using issuer url: %v", authzInfoVal.Issuer)
 	
 	switch opts.AuthzMode {
@@ -70,7 +72,12 @@ func New(opts Options, authOpts auth.Options) (authz.Interface, error) {
 		c.rbacClient, err = rbac.NewWithAKS(authOpts.AKSTokenURL, authOpts.TenantID, authzInfoVal.MSRbacHost, AKSAuthzMode, opts.ResourceId)
 	}
 	if err != nil {
+		fmt.Printf("failed to create rbac client %s",err)
 		return nil, errors.Wrap(err, "failed to create ms rbac client")
+	}
+
+	if c.rbacClient == nil {
+		fmt.Println("rbac client is nil in azure")
 	}
 	return c, nil
 }

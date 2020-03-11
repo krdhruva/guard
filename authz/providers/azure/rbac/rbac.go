@@ -74,6 +74,10 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, useGroup
 		u.clusterType = MANAGED_CLUSTER
 	}
 
+	if u == nil {
+		fmt.Println("access info is nil")
+	}
+
 	return u, nil
 }
 
@@ -81,10 +85,15 @@ func New(clientID, clientSecret, tenantID string, useGroupUID bool, aadEndpoint,
 	rbacEndpoint := "https://" + msrbacHost + "/"
 	rbacURL, _ := url.Parse(rbacEndpoint)
 
+	fmt.Printf("clientID:%s,secret:%s,Tenant:%s,aadEP:%s,host:%s,clusterType:%s",clientID, clientSecret, tenantID,
+	aadEndpoint,msrbacHost,clusterType)
 	tokenProvider := graph.NewClientCredentialTokenProvider(clientID, clientSecret,
 		fmt.Sprintf("%s%s/oauth2/v2.0/token", aadEndpoint, tenantID),
 		fmt.Sprintf("https://%s/.default", msrbacHost))
 
+	if tokenProvider == nil {
+		fmt.Println("tokenProvider nil")
+	}
 	return newAccessInfo(tokenProvider, rbacURL, useGroupUID, clusterType, resourceId)
 }
 
