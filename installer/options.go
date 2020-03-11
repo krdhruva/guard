@@ -25,6 +25,9 @@ import (
 	"github.com/appscode/guard/auth/providers/ldap"
 	"github.com/appscode/guard/auth/providers/token"
 
+	authzProv "github.com/appscode/guard/authz/providers"
+	azureAuthz "github.com/appscode/guard/authz/providers/azure"
+
 	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -44,6 +47,9 @@ type Options struct {
 	LDAP         ldap.Options
 	Github       github.Options
 	Gitlab       gitlab.Options
+
+	AuthzProvider authzProv.AuthzProviders
+	AzureAuthz    azureAuthz.Options
 }
 
 func New() Options {
@@ -59,6 +65,7 @@ func New() Options {
 		LDAP:            ldap.NewOptions(),
 		Github:          github.NewOptions(),
 		Gitlab:          gitlab.NewOptions(),
+		AzureAuthz:      azureAuthz.NewOptions(),
 	}
 }
 
@@ -76,6 +83,8 @@ func (o *Options) AddFlags(fs *pflag.FlagSet) {
 	o.LDAP.AddFlags(fs)
 	o.Github.AddFlags(fs)
 	o.Gitlab.AddFlags(fs)
+	o.AuthzProvider.AddFlags(fs)
+	o.AzureAuthz.AddFlags(fs)
 }
 
 func (o *Options) Validate() []error {
@@ -99,6 +108,12 @@ func (o *Options) Validate() []error {
 	}
 	if o.AuthProvider.Has(gitlab.OrgType) {
 		errs = append(errs, o.Gitlab.Validate()...)
+	}
+
+	errs = append(errs, o.AuthzProvider.Validate()...)
+
+	if o.AuthzProvider.Has(azureAuthz.OrgType) {
+		errs = append(errs, o.AzureAuthz.Validate(o.Azure)...)
 	}
 
 	return errs
