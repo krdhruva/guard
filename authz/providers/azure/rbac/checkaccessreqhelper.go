@@ -139,13 +139,16 @@ func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType
 		fmt.Println("KD: req nil")
 	}
 
-	checkaccessreq := &CheckAccessRequest{}
+	var checkaccessreq CheckAccessRequest
 	checkaccessreq.Subject.Attributes.ObjectId = getUserId(req.User)
 	checkaccessreq.Subject.Attributes.Groups = req.Groups
 	checkaccessreq.Subject.Attributes.ExpandGroupMembership = true
-	checkaccessreq.Actions[0] = getDataAction(req, clusterType)
+	tmp := make([]AuthorizationActionInfo, 1)
+	tmp[0] = getDataAction(req, clusterType)
+	checkaccessreq.Actions = tmp
 	checkaccessreq.Resource.Id = resourceId
 
+	fmt.Printf("checkaccess req: %s", checkaccessreq)
 	fmt.Printf("User:%s, Groups:%s, Action:%s", req.User, req.Groups, getDataAction(req,clusterType))
 
 	bytes, err := json.Marshal(checkaccessreq)
