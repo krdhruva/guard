@@ -30,6 +30,7 @@ import (
 	"github.com/appscode/guard/server"
 
 	apps "k8s.io/api/apps/v1"
+	azureAuthz "github.com/appscode/guard/authz/providers/azure"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -176,6 +177,20 @@ func newDeployment(opts Options) (objects []runtime.Object, err error) {
 
 	if opts.AuthProvider.Has(gitlab.OrgType) {
 		if extras, err := opts.Gitlab.Apply(d); err != nil {
+			return nil, err
+		} else {
+			objects = append(objects, extras...)
+		}
+	}
+
+	if extras, err := opts.AuthzProvider.Apply(d); err != nil {
+		return nil, err
+	} else {
+		objects = append(objects, extras...)
+	}
+
+	if opts.AuthzProvider.Has(azureAuthz.OrgType) {
+		if extras, err := opts.AzureAuthz.Apply(d); err != nil {
 			return nil, err
 		} else {
 			objects = append(objects, extras...)
