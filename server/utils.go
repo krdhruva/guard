@@ -24,6 +24,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	auth "k8s.io/api/authentication/v1"
+	authz "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -68,6 +69,17 @@ func write(w http.ResponseWriter, info *auth.UserInfo, err error) {
 	}
 
 	err = json.NewEncoder(w).Encode(resp)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func writeAuthzResponse(w http.ResponseWriter, resp *authz.SubjectAccessReviewStatus) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("x-content-type-options", "nosniff")
+	w.WriteHeader(http.StatusOK)
+
+	err := json.NewEncoder(w).Encode(resp)
 	if err != nil {
 		panic(err)
 	}

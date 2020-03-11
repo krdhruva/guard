@@ -131,8 +131,12 @@ func (s Server) Authzhandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	resp, err := client.Check(&data.Spec)
-	fmt.Printf("auth response allowed:%d denied:%d, reason:%s", resp.Allowed, resp.Denied, resp.Reason)
-	glog.Infof(resp.Reason)
+	if resp != nil {
+		fmt.Printf("auth response allowed:%d denied:%d, reason:%s", resp.Allowed, resp.Denied, resp.Reason)
+		writeAuthzResponse(w, resp)
+	} else {
+		fmt.Printf("error in response")
+	}
 }
 
 func (s Server) getAuthzProviderClient(org, commonName string) (authz.Interface, error) {
