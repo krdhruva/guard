@@ -84,6 +84,10 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 		return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "no opinion"}, nil
 	}
 	fmt.Println("KD:returning resonse for user")
+	if s.rbacClient == nil {
+		fmt.Println("rbac client is nill")
+	}
+
 	response, _ := s.rbacClient.CheckAccess(request)
 	if response == nil {
 		fmt.Println("nil in checkaccess response")

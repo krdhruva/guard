@@ -135,6 +135,10 @@ func getDataAction(subRevReq *authzv1.SubjectAccessReviewSpec, clusterType strin
 }
 
 func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType, resourceId string) ([]byte, error) {
+	if req == nil {
+		fmt.Println("KD: req nil")
+	}
+
 	var checkaccessreq CheckAccessRequest
 	checkaccessreq.Subject.Attributes.ObjectId = getUserId(req.User)
 	checkaccessreq.Subject.Attributes.Groups = req.Groups
@@ -142,8 +146,12 @@ func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType
 	checkaccessreq.Actions[0] = getDataAction(req, clusterType)
 	checkaccessreq.Resource.Id = resourceId
 
+	fmt.Printf("User:%s, Groups:%s, Action:%s", req.User, req.Groups, getDataAction(req,clusterType))
+
 	bytes, err := json.Marshal(checkaccessreq)
 	if err != nil {
+		fmt.Println("error in marshalling")
+		fmt.Println(err)
 		return nil, err
 	} else {
 		return bytes, nil

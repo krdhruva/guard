@@ -120,6 +120,8 @@ func (a *AccessInfo) IsTokenExpired() bool {
 }
 
 func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*authzv1.SubjectAccessReviewStatus, error) {
+	fmt.Printf("checkaccess: type:%s, id:%s",a.clusterType, a.azureResourceId)
+
 	checkAccessBody, err := PrepareCheckAccessRequest(request, a.clusterType, a.azureResourceId)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating check access request")
