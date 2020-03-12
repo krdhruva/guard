@@ -90,8 +90,8 @@ func New(clientID, clientSecret, tenantID string, useGroupUID bool, aadEndpoint,
 	fmt.Printf("clientID:%s,secret:%s,Tenant:%s,aadEP:%s,host:%s,clusterType:%s, rbacURL:%s, raw:%s", clientID, clientSecret, tenantID,
 		aadEndpoint, msrbacHost, clusterType, rbacURL, rbacURL.RawPath)
 	tokenProvider := graph.NewClientCredentialTokenProvider(clientID, clientSecret,
-		aadEndpoint+tenantID+"/oauth2/token",
-		msrbacHost)
+		aadEndpoint+tenantID+"/oauth2/v2.0/token",
+		msrbacHost+".default")
 
 	if tokenProvider == nil {
 		fmt.Println("tokenProvider nil")
