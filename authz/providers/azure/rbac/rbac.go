@@ -15,7 +15,7 @@ limitations under the License.
 */
 package rbac
 
-import (	
+import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
@@ -34,8 +34,8 @@ import (
 
 // These are the base URL endpoints for MS graph
 var (
-	MANAGED_CLUSTER   = "Microsoft.ContainerService/managedClusters/"
-	CONNECTED_CLUSTER = "Microsoft.Kubernetes/connectedClusters/"
+	MANAGED_CLUSTER   = "Microsoft.ContainerService/managedClusters"
+	CONNECTED_CLUSTER = "Microsoft.Kubernetes/connectedClusters"
 )
 
 const (
@@ -85,11 +85,11 @@ func New(clientID, clientSecret, tenantID string, useGroupUID bool, aadEndpoint,
 	rbacEndpoint := "https://" + msrbacHost + "/"
 	rbacURL, _ := url.Parse(rbacEndpoint)
 
-	fmt.Printf("clientID:%s,secret:%s,Tenant:%s,aadEP:%s,host:%s,clusterType:%s",clientID, clientSecret, tenantID,
-	aadEndpoint,msrbacHost,clusterType)
+	fmt.Printf("clientID:%s,secret:%s,Tenant:%s,aadEP:%s,host:%s,clusterType:%s, rbacURL", clientID, clientSecret, tenantID,
+		aadEndpoint, msrbacHost, clusterType, rbacURL.Path)
 	tokenProvider := graph.NewClientCredentialTokenProvider(clientID, clientSecret,
-		fmt.Sprintf("%s%s/oauth2/v2.0/token", aadEndpoint, tenantID),
-		fmt.Sprintf("https://%s/.default", msrbacHost))
+		fmt.Sprintf("%s%s/oauth2/token", aadEndpoint, tenantID),
+		fmt.Sprintf("%s", msrbacHost))
 
 	if tokenProvider == nil {
 		fmt.Println("tokenProvider nil")
@@ -106,7 +106,7 @@ func NewWithAKS(tokenURL, tenantID, msrbacHost, clusterType, resourceId string) 
 	return newAccessInfo(tokenProvider, rbacURL, true, clusterType, resourceId)
 }
 
-func (a *AccessInfo) RefreshToken() error { 
+func (a *AccessInfo) RefreshToken() error {
 	resp, err := a.tokenProvider.Acquire(graph.TokenOptions{"", ""})
 	if err != nil {
 		fmt.Printf("Ts: failed to refresh token: %s", a.tokenProvider.Name(), err.Error())
@@ -126,11 +126,11 @@ func (a *AccessInfo) IsTokenExpired() bool {
 		return true
 	} else {
 		return false
-	}	
+	}
 }
 
 func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*authzv1.SubjectAccessReviewStatus, error) {
-	fmt.Printf("checkaccess: type:%s, id:%s",a.clusterType, a.azureResourceId)
+	fmt.Printf("checkaccess: type:%s, id:%s", a.clusterType, a.azureResourceId)
 
 	checkAccessBody, err := PrepareCheckAccessRequest(request, a.clusterType, a.azureResourceId)
 	if err != nil {
@@ -139,12 +139,12 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	}
 
 	checkAccessURL := *a.apiURL
+	fmt.Printf("Initial url:%s", checkAccessURL.Path)
 	// Append the path for azure cluster resource id
 	checkAccessURL.Path = path.Join(checkAccessURL.Path, a.azureResourceId)
-	namespace := getNameSpaceScoe(request)
-	if namespace != nil {
-		var namespaceVal string = *namespace
-		checkAccessURL.Path = path.Join(namespaceVal)
+	var str string
+	if getNameSpaceScope(request, &str) {
+		checkAccessURL.Path = path.Join(str)
 	}
 
 	checkAccessURL.Path = path.Join("/providers/Microsoft.Authorization/checkaccess?api-version=2018-09-01-preview")
@@ -182,22 +182,23 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	}
 
 	data, _ := ioutil.ReadAll(resp.Body)
-	if resp.StatusCode != http.StatusOK {		
+	if resp.StatusCode != http.StatusOK {
 		fmt.Printf("request failed %s with status code %d and response is %s", req.URL.Path, resp.StatusCode, string(data))
 
 		return nil, errors.Errorf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
 	} else {
 		remaining := resp.Header.Get("x-ms-ratelimit-remaining-subscription-reads")
+		fmt.Printf("remaining req: %s", remaining)
 		count, _ := strconv.Atoi(remaining)
 		if count < 2000 {
 			if glog.V(10) {
 				glog.V(10).Infoln("Moving to another ARM instance!")
-			a.client.CloseIdleConnections()			
+				a.client.CloseIdleConnections()
+			}
 		}
 	}
-}
-	
+
 	// Decode response and prepare k8s response
 	k8sres := ConvertCheckAccessResponse(data)
-	return k8sres,nil
+	return k8sres, nil
 }

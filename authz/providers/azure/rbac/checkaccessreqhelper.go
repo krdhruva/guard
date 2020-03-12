@@ -133,7 +133,6 @@ func getSecGroups(groups []string) []string {
 	return finalGroups
 }
 
-
 func getActionName(verb string) string {
 	switch verb {
 	case "get":
@@ -156,14 +155,14 @@ func getDataAction(subRevReq *authzv1.SubjectAccessReviewSpec, clusterType strin
 		IsDataAction: true}
 
 	authInfo.AuthorizationEntity.Id = clusterType
-	fmt.Printf("clusterType:%s",clusterType)
+	fmt.Printf("clusterType:%s", clusterType)
 	if subRevReq.ResourceAttributes != nil {
 		if subRevReq.ResourceAttributes.Group != "" {
-			fmt.Printf("group is:%s",subRevReq.ResourceAttributes.Group)
-			authInfo.AuthorizationEntity.Id += subRevReq.ResourceAttributes.Group + "/"
+			fmt.Printf("group is:%s", subRevReq.ResourceAttributes.Group)
+			authInfo.AuthorizationEntity.Id += "/" + subRevReq.ResourceAttributes.Group
 		}
-		fmt.Printf("resource:%s",subRevReq.ResourceAttributes.Resource)
-		authInfo.AuthorizationEntity.Id += subRevReq.ResourceAttributes.Resource + "/" + getActionName(subRevReq.ResourceAttributes.Verb)
+		fmt.Printf("resource:%s", subRevReq.ResourceAttributes.Resource)
+		authInfo.AuthorizationEntity.Id += "/" + subRevReq.ResourceAttributes.Resource + "/" + getActionName(subRevReq.ResourceAttributes.Verb)
 	} else if subRevReq.NonResourceAttributes != nil {
 		fmt.Printf("non res:%s", subRevReq.NonResourceAttributes.Path)
 		authInfo.AuthorizationEntity.Id += subRevReq.NonResourceAttributes.Path + "/" + getActionName(subRevReq.NonResourceAttributes.Verb)
@@ -175,7 +174,7 @@ func getDataAction(subRevReq *authzv1.SubjectAccessReviewSpec, clusterType strin
 func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType, resourceId string) ([]byte, error) {
 	var checkaccessreq CheckAccessRequest
 	checkaccessreq.Subject.Attributes.ObjectId = getUserId(req.User)
-	
+
 	if len(req.Groups) > 0 {
 		groups := getSecGroups(req.Groups)
 		if len(groups) > 0 {
@@ -183,7 +182,7 @@ func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType
 			checkaccessreq.Subject.Attributes.ExpandGroupMembership = true
 		}
 	}
-	
+
 	tmp := make([]AuthorizationActionInfo, 1)
 	tmp[0] = getDataAction(req, clusterType)
 	checkaccessreq.Actions = tmp
@@ -204,13 +203,12 @@ func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType
 	}
 }
 
-func getNameSpaceScoe(req *authzv1.SubjectAccessReviewSpec) *string {
+func getNameSpaceScope(req *authzv1.SubjectAccessReviewSpec, str *string) bool {
 	if req.ResourceAttributes != nil && req.ResourceAttributes.Namespace != "" {
-		str := "/" + req.ResourceAttributes.Namespace
-		// to-do this is wrong
-		return &str
+		str := "/namespace" + req.ResourceAttributes.Namespace
+		return true
 	}
-	return nil
+	return false
 }
 
 func ConvertCheckAccessResponse(body []byte) *authzv1.SubjectAccessReviewStatus {
@@ -237,5 +235,5 @@ func ConvertCheckAccessResponse(body []byte) *authzv1.SubjectAccessReviewStatus 
 
 	fmt.Printf("allowed is %d, denied is %d, reason %s", allowed, denied, verdict)
 
-	return &authzv1.SubjectAccessReviewStatus{Allowed: allowed, Reason: verdict, Denied:denied}
+	return &authzv1.SubjectAccessReviewStatus{Allowed: allowed, Reason: verdict, Denied: denied}
 }
