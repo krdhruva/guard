@@ -111,8 +111,10 @@ func getUserId(userName string) string {
 
 func getScope(resourceId string, attr *authzv1.ResourceAttributes) string {
 	if attr != nil && attr.Namespace != "" {
+		fmt.Println("in if")
 		return resourceId + "/namespace/" + attr.Namespace
 	}
+	fmt.Println("not in in")
 	return resourceId
 }
 
@@ -152,13 +154,11 @@ func getActionName(verb string) string {
 func getDataAction(subRevReq *authzv1.SubjectAccessReviewSpec, clusterType string) AuthorizationActionInfo {
 	var authInfo AuthorizationActionInfo
 	if subRevReq.ResourceAttributes != nil {
-		fmt.Printf("incoming data: Group: %s, Res name: %s, namespace: %s, subres:%s, verb:%s", subRevReq.ResourceAttributes.Group, subRevReq.ResourceAttributes.Resource, subRevReq.ResourceAttributes.Namespace, subRevReq.ResourceAttributes.Subresource, subRevReq.ResourceAttributes.Verb)
 		authInfo.AuthorizationEntity.Id = clusterType
 		if subRevReq.ResourceAttributes.Group != "" {
 			authInfo.AuthorizationEntity.Id += subRevReq.ResourceAttributes.Group + "/"
 		}
 		authInfo.AuthorizationEntity.Id += subRevReq.ResourceAttributes.Resource + "/" + getActionName(subRevReq.ResourceAttributes.Verb)
-		fmt.Printf("final string: %s", authInfo.AuthorizationEntity.Id)
 	} else if subRevReq.NonResourceAttributes != nil {
 		authInfo.AuthorizationEntity.Id = clusterType + subRevReq.NonResourceAttributes.Path + getActionName(subRevReq.NonResourceAttributes.Verb)
 	}
@@ -167,10 +167,6 @@ func getDataAction(subRevReq *authzv1.SubjectAccessReviewSpec, clusterType strin
 }
 
 func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType, resourceId string) ([]byte, error) {
-	if req == nil {
-		fmt.Println("KD: req nil")
-	}
-
 	var checkaccessreq CheckAccessRequest
 	checkaccessreq.Subject.Attributes.ObjectId = getUserId(req.User)
 	
@@ -187,8 +183,7 @@ func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType
 	checkaccessreq.Actions = tmp
 	checkaccessreq.Resource.Id = getScope(resourceId, req.ResourceAttributes)
 
-	fmt.Printf("checkaccess req: %s", checkaccessreq)
-
+	fmt.Printf("scope is: %s", checkaccessreq.Resource.Id)
 	bytes, err := json.Marshal(checkaccessreq)
 	if err != nil {
 		fmt.Println("error in marshalling")
@@ -197,6 +192,7 @@ func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType
 	} else {
 		var jsonStr interface{}
 		json.Unmarshal([]byte(bytes), &jsonStr)
+		fmt.Println("unmarshelled:")
 		fmt.Println(jsonStr)
 		return bytes, nil
 	}
