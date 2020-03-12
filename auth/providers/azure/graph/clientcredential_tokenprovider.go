@@ -83,9 +83,12 @@ func (u *clientCredentialTokenProvider) Acquire(token TokenOptions) (AuthRespons
 		fmt.Printf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
 		return authResp, errors.Errorf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
 	}
+
+	data, _ := ioutil.ReadAll(resp.Body)
+	fmt.Printf("Res code: %d, data: %s", resp.StatusCode, string(data))
 	err = json.NewDecoder(resp.Body).Decode(&authResp)
 	if err != nil {
-		fmt.Printf("failed to decode response for request %s", req.URL)
+		fmt.Printf("failed to decode response for request %s", req.URL.String())
 		return authResp, errors.Wrapf(err, "failed to decode response for request %s", req.URL.Path)
 	}
 
