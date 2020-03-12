@@ -88,10 +88,10 @@ func New(clientID, clientSecret, tenantID string, useGroupUID bool, aadEndpoint,
 		fmt.Printf("error in url parsing %s", error.Error())
 	}
 	fmt.Printf("clientID:%s,secret:%s,Tenant:%s,aadEP:%s,host:%s,clusterType:%s, rbacURL:%s, raw:%s", clientID, clientSecret, tenantID,
-		aadEndpoint, msrbacHost, clusterType, rbacURL.Path, rbacURL.RawPath)
+		aadEndpoint, msrbacHost, clusterType, rbacURL, rbacURL.RawPath)
 	tokenProvider := graph.NewClientCredentialTokenProvider(clientID, clientSecret,
 		fmt.Sprintf("%s%s/oauth2/token", aadEndpoint, tenantID),
-		fmt.Sprintf("%s", msrbacHost))
+		msrbacHost)
 
 	if tokenProvider == nil {
 		fmt.Println("tokenProvider nil")
@@ -141,7 +141,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	}
 
 	checkAccessURL := *a.apiURL
-	fmt.Printf("Initial url:%s", checkAccessURL.Path)
+	fmt.Printf("Initial url:%s", checkAccessURL)
 	// Append the path for azure cluster resource id
 	checkAccessURL.Path = path.Join(checkAccessURL.Path, a.azureResourceId)
 	var str string
@@ -150,7 +150,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	}
 
 	checkAccessURL.Path = path.Join(checkAccessURL.Path, "/providers/Microsoft.Authorization/checkaccess?api-version=2018-09-01-preview")
-	fmt.Printf("URL : %s", checkAccessURL.Path)
+	fmt.Printf("URL : %s", checkAccessURL.String())
 	if a.IsTokenExpired() {
 		fmt.Println("Refreshing tokne")
 		a.RefreshToken()
