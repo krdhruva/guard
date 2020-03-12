@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
+	"github.com/google/uuid"
 	authzv1 "k8s.io/api/authorization/v1"
 )
 
@@ -110,10 +111,26 @@ func getUserId(userName string) string {
 
 func getScope(resourceId string, attr *authzv1.ResourceAttributes) string {
 	if attr != nil && attr.Namespace != "" {
-		return resourceId + attr.Namespace
+		return resourceId + "/namespace/" + attr.Namespace
 	}
 	return resourceId
 }
+
+func IsValidUUID(u string) bool {
+	_, err := uuid.Parse(u)
+	return err == nil
+}
+
+func getSecGroups(groups []string) []string {
+	var finalGroups []string
+	for _, element := range groups {
+		if IsValidUUID(element) {
+			finalGroups = append(finalGroups, element)
+		}
+	}
+	return finalGroups
+}
+
 
 func getActionName(verb string) string {
 	switch verb {
@@ -156,8 +173,15 @@ func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType
 
 	var checkaccessreq CheckAccessRequest
 	checkaccessreq.Subject.Attributes.ObjectId = getUserId(req.User)
-	checkaccessreq.Subject.Attributes.Groups = req.Groups
-	checkaccessreq.Subject.Attributes.ExpandGroupMembership = true
+	
+	if len(req.Groups) > 0 {
+		groups := getSecGroups(req.Groups)
+		if len(groups) > 0 {
+			checkaccessreq.Subject.Attributes.Groups = groups
+			checkaccessreq.Subject.Attributes.ExpandGroupMembership = true
+		}
+	}
+	
 	tmp := make([]AuthorizationActionInfo, 1)
 	tmp[0] = getDataAction(req, clusterType)
 	checkaccessreq.Actions = tmp
