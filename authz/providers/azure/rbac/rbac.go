@@ -117,6 +117,7 @@ func (a *AccessInfo) RefreshToken() error {
 
 	// Set the authorization headers for future requests
 	a.headers.Set("Authorization", fmt.Sprintf("Bearer %s", resp.Token))
+	fmt.Printf("token:%s", resp.Token)
 	expIn := time.Duration(resp.Expires) * time.Second
 	a.expires = time.Now().Add(expIn - expiryDelta)
 
@@ -176,6 +177,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	}
 	defer resp.Body.Close()
 
+	fmt.Printf("checkAcc res:%d", resp.StatusCode)
 	if resp.StatusCode == http.StatusTooManyRequests {
 		a.client.CloseIdleConnections()
 		if glog.V(10) {
@@ -185,7 +187,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 
 	data, _ := ioutil.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		fmt.Printf("request failed %s with status code %d and response is %s", req.URL.Path, resp.StatusCode, string(data))
+		fmt.Printf("request failed %s with status code %d and response is %s", req.URL.String(), resp.StatusCode, string(data))
 
 		return nil, errors.Errorf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
 	} else {
