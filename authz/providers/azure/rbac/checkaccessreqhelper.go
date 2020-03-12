@@ -166,7 +166,7 @@ func getDataAction(subRevReq *authzv1.SubjectAccessReviewSpec, clusterType strin
 		authInfo.AuthorizationEntity.Id += subRevReq.ResourceAttributes.Resource + "/" + getActionName(subRevReq.ResourceAttributes.Verb)
 	} else if subRevReq.NonResourceAttributes != nil {
 		fmt.Printf("non res:%s", subRevReq.NonResourceAttributes.Path)
-		authInfo.AuthorizationEntity.Id = subRevReq.NonResourceAttributes.Path + "/" + getActionName(subRevReq.NonResourceAttributes.Verb)
+		authInfo.AuthorizationEntity.Id += subRevReq.NonResourceAttributes.Path + "/" + getActionName(subRevReq.NonResourceAttributes.Verb)
 	}
 
 	return authInfo

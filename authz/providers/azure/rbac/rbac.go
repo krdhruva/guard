@@ -133,6 +133,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 
 	checkAccessBody, err := PrepareCheckAccessRequest(request, a.clusterType, a.azureResourceId)
 	if err != nil {
+		fmt.Println("error in preparing req")
 		return nil, errors.Wrap(err, "error creating check access request")
 	}
 
@@ -153,6 +154,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 
 	req, err := http.NewRequest(http.MethodPost, checkAccessURL.String(), bytes.NewReader(checkAccessBody))
 	if err != nil {
+		fmt.Printf("error while creating chceck access %s", err)
 		return nil, errors.Wrap(err, "error creating check access request")
 	}
 	// Set the auth headers for the request
@@ -166,6 +168,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	resp, err := a.client.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "error getting check access result")
+		fmt.Printf("error in http request %s", err)
 	}
 	defer resp.Body.Close()
 
@@ -179,6 +182,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	data, _ := ioutil.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {		
 		return nil, errors.Errorf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
+		fmt.Printf("request failed %s with status code %d and response is %s", req.URL.Path, resp.StatusCode, string(data))
 	} else {
 		remaining := resp.Header.Get("x-ms-ratelimit-remaining-subscription-reads")
 		count, _ := strconv.Atoi(remaining)
