@@ -109,6 +109,7 @@ func NewWithAKS(tokenURL, tenantID, msrbacHost, clusterType, resourceId string) 
 func (a *AccessInfo) RefreshToken() error { 
 	resp, err := a.tokenProvider.Acquire(graph.TokenOptions{"", ""})
 	if err != nil {
+		fmt.Printf("Ts: failed to refresh token: %s", a.tokenProvider.Name(), err.Error())
 		return errors.Errorf("%s: failed to refresh token: %s", a.tokenProvider.Name(), err)
 	}
 
@@ -147,8 +148,9 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	}
 
 	checkAccessURL.Path = path.Join("/providers/Microsoft.Authorization/checkaccess?api-version=2018-09-01-preview")
-	
+	fmt.Printf("URL : %s", checkAccessURL.Path)
 	if a.IsTokenExpired() {
+		fmt.Println("Refreshing tokne")
 		a.RefreshToken()
 	}
 
@@ -167,8 +169,8 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 
 	resp, err := a.client.Do(req)
 	if err != nil {
+		fmt.Printf("error in http response %s", err.Error())
 		return nil, errors.Wrap(err, "error getting check access result")
-		fmt.Printf("error in http request %s", err)
 	}
 	defer resp.Body.Close()
 
@@ -181,8 +183,9 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 
 	data, _ := ioutil.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {		
-		return nil, errors.Errorf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
 		fmt.Printf("request failed %s with status code %d and response is %s", req.URL.Path, resp.StatusCode, string(data))
+
+		return nil, errors.Errorf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
 	} else {
 		remaining := resp.Header.Get("x-ms-ratelimit-remaining-subscription-reads")
 		count, _ := strconv.Atoi(remaining)
