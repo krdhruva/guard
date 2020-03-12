@@ -90,7 +90,7 @@ func New(clientID, clientSecret, tenantID string, useGroupUID bool, aadEndpoint,
 	fmt.Printf("clientID:%s,secret:%s,Tenant:%s,aadEP:%s,host:%s,clusterType:%s, rbacURL:%s, raw:%s", clientID, clientSecret, tenantID,
 		aadEndpoint, msrbacHost, clusterType, rbacURL, rbacURL.RawPath)
 	tokenProvider := graph.NewClientCredentialTokenProvider(clientID, clientSecret,
-		fmt.Sprintf("%s%s/oauth2/token", aadEndpoint, tenantID),
+		aadEndpoint+tenantID+"/oauth2/token",
 		msrbacHost)
 
 	if tokenProvider == nil {
@@ -141,7 +141,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	}
 
 	checkAccessURL := *a.apiURL
-	fmt.Printf("Initial url:%s", checkAccessURL)
+	fmt.Printf("Initial url:%s", checkAccessURL.String())
 	// Append the path for azure cluster resource id
 	checkAccessURL.Path = path.Join(checkAccessURL.Path, a.azureResourceId)
 	var str string

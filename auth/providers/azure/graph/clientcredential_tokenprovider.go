@@ -16,6 +16,7 @@ limitations under the License.
 package graph
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -58,8 +59,10 @@ func (u *clientCredentialTokenProvider) Acquire(token TokenOptions) (AuthRespons
 	form.Set("scope", u.scope)
 	form.Set("grant_type", "client_credentials")
 
+	fmt.Printf("form:%s,%s,%s%s", u.clientID, u.clientSecret, u.scope, u.loginURL)
 	req, err := http.NewRequest(http.MethodPost, u.loginURL, strings.NewReader(form.Encode()))
 	if err != nil {
+		fmt.Printf("Error in acquire %s", err.Error())
 		return authResp, errors.Wrap(err, "fail to create request")
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -70,16 +73,19 @@ func (u *clientCredentialTokenProvider) Acquire(token TokenOptions) (AuthRespons
 
 	resp, err := u.client.Do(req)
 	if err != nil {
+		fmt.Printf("Failed to send request %s", err.Error())
 		return authResp, errors.Wrap(err, "fail to send request")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		data, _ := ioutil.ReadAll(resp.Body)
+		fmt.Printf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
 		return authResp, errors.Errorf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
 	}
 	err = json.NewDecoder(resp.Body).Decode(&authResp)
 	if err != nil {
+		fmt.Printf("failed to decode response for request %s", req.URL)
 		return authResp, errors.Wrapf(err, "failed to decode response for request %s", req.URL.Path)
 	}
 
