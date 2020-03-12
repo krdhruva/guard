@@ -152,15 +152,21 @@ func getActionName(verb string) string {
 }
 
 func getDataAction(subRevReq *authzv1.SubjectAccessReviewSpec, clusterType string) AuthorizationActionInfo {
-	var authInfo AuthorizationActionInfo
+	authInfo := AuthorizationActionInfo{
+		IsDataAction: true}
+
+	authInfo.AuthorizationEntity.Id = clusterType
+	fmt.Printf("clusterType:%s",clusterType)
 	if subRevReq.ResourceAttributes != nil {
-		authInfo.AuthorizationEntity.Id = clusterType
 		if subRevReq.ResourceAttributes.Group != "" {
+			fmt.Printf("group is:%s",subRevReq.ResourceAttributes.Group)
 			authInfo.AuthorizationEntity.Id += subRevReq.ResourceAttributes.Group + "/"
 		}
+		fmt.Printf("resource:%s",subRevReq.ResourceAttributes.Resource)
 		authInfo.AuthorizationEntity.Id += subRevReq.ResourceAttributes.Resource + "/" + getActionName(subRevReq.ResourceAttributes.Verb)
 	} else if subRevReq.NonResourceAttributes != nil {
-		authInfo.AuthorizationEntity.Id = clusterType + subRevReq.NonResourceAttributes.Path + getActionName(subRevReq.NonResourceAttributes.Verb)
+		fmt.Printf("non res:%s", subRevReq.NonResourceAttributes.Path)
+		authInfo.AuthorizationEntity.Id = subRevReq.NonResourceAttributes.Path + "/" + getActionName(subRevReq.NonResourceAttributes.Verb)
 	}
 
 	return authInfo
