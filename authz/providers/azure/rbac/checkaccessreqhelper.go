@@ -25,8 +25,8 @@ import (
 
 type SubjectInfoAttributes struct {
 	ObjectId              string   `json:"ObjectId"`
-	Groups                []string `json:"Groups"`
-	ExpandGroupMembership bool     `json:"xms-pasrp-retrievegroupmemberships"`
+	Groups                []string `json:"Groups,omitempty"`
+	ExpandGroupMembership bool     `json:"xms-pasrp-retrievegroupmemberships,omitempty"`
 }
 
 type SubjectInfo struct {
@@ -126,7 +126,9 @@ func getActionName(verb string) string {
 func getDataAction(subRevReq *authzv1.SubjectAccessReviewSpec, clusterType string) AuthorizationActionInfo {
 	var authInfo AuthorizationActionInfo
 	if subRevReq.ResourceAttributes != nil {
+		fmt.Printf("incoming data: Group: %s, Res name: %s, namespace: %s, subres:%s, verb:%s", subRevReq.ResourceAttributes.Group, subRevReq.ResourceAttributes.Resource, subRevReq.ResourceAttributes.Namespace, subRevReq.ResourceAttributes.Verb)
 		authInfo.AuthorizationEntity.Id = clusterType + subRevReq.ResourceAttributes.Group  +  "/" + subRevReq.ResourceAttributes.Resource + getActionName(subRevReq.ResourceAttributes.Verb)
+		fmt.Printf("final string: %s", authInfo.AuthorizationEntity.Id)
 	} else if subRevReq.NonResourceAttributes != nil {
 		authInfo.AuthorizationEntity.Id = clusterType + subRevReq.NonResourceAttributes.Path + getActionName(subRevReq.NonResourceAttributes.Verb)
 	}
