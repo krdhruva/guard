@@ -111,6 +111,8 @@ func getUserId(userName string) string {
 func getActionName(verb string) string {
 	switch verb {
 	case "get":
+		fallthrough
+	case "list":
 		return "read"
 	case "put":
 		return "write"
@@ -126,8 +128,12 @@ func getActionName(verb string) string {
 func getDataAction(subRevReq *authzv1.SubjectAccessReviewSpec, clusterType string) AuthorizationActionInfo {
 	var authInfo AuthorizationActionInfo
 	if subRevReq.ResourceAttributes != nil {
-		fmt.Printf("incoming data: Group: %s, Res name: %s, namespace: %s, subres:%s, verb:%s", subRevReq.ResourceAttributes.Group, subRevReq.ResourceAttributes.Resource, subRevReq.ResourceAttributes.Namespace, subRevReq.ResourceAttributes.Verb)
-		authInfo.AuthorizationEntity.Id = clusterType + subRevReq.ResourceAttributes.Group  +  "/" + subRevReq.ResourceAttributes.Resource + getActionName(subRevReq.ResourceAttributes.Verb)
+		fmt.Printf("incoming data: Group: %s, Res name: %s, namespace: %s, subres:%s, verb:%s", subRevReq.ResourceAttributes.Group, subRevReq.ResourceAttributes.Resource, subRevReq.ResourceAttributes.Namespace, subRevReq.ResourceAttributes.Subresource, subRevReq.ResourceAttributes.Verb)
+		authInfo.AuthorizationEntity.Id = clusterType
+		if subRevReq.ResourceAttributes.Group != "" {
+			authInfo.AuthorizationEntity.Id += subRevReq.ResourceAttributes.Group + "/"
+		}
+		authInfo.AuthorizationEntity.Id += subRevReq.ResourceAttributes.Resource + "/" + getActionName(subRevReq.ResourceAttributes.Verb)
 		fmt.Printf("final string: %s", authInfo.AuthorizationEntity.Id)
 	} else if subRevReq.NonResourceAttributes != nil {
 		authInfo.AuthorizationEntity.Id = clusterType + subRevReq.NonResourceAttributes.Path + getActionName(subRevReq.NonResourceAttributes.Verb)
