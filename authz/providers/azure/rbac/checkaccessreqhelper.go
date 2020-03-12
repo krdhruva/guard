@@ -206,6 +206,7 @@ func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType
 func getNameSpaceScope(req *authzv1.SubjectAccessReviewSpec, str *string) bool {
 	if req.ResourceAttributes != nil && req.ResourceAttributes.Namespace != "" {
 		str := "/namespace" + req.ResourceAttributes.Namespace
+		fmt.Printf("print str %s", str)
 		return true
 	}
 	return false
