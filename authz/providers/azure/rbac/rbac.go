@@ -82,8 +82,11 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, useGroup
 }
 
 func New(clientID, clientSecret, tenantID string, useGroupUID bool, aadEndpoint, msrbacHost, clusterType, resourceId string) (*AccessInfo, error) {
-	rbacURL, _ := url.Parse(msrbacHost)
+	rbacURL, error := url.Parse(msrbacHost)
 
+	if error != nil {
+		fmt.Printf("error in url parsing %s", error.Error())
+	}
 	fmt.Printf("clientID:%s,secret:%s,Tenant:%s,aadEP:%s,host:%s,clusterType:%s, rbacURL:%s, raw:%s", clientID, clientSecret, tenantID,
 		aadEndpoint, msrbacHost, clusterType, rbacURL.Path, rbacURL.RawPath)
 	tokenProvider := graph.NewClientCredentialTokenProvider(clientID, clientSecret,
