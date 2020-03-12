@@ -108,6 +108,13 @@ func getUserId(userName string) string {
 	return "92634de3-03f6-4092-b41b-20616b11a464"
 }
 
+func getScope(resourceId string, attr *authzv1.ResourceAttributes) string {
+	if attr != nil && attr.Namespace != "" {
+		return resourceId + attr.Namespace
+	}
+	return resourceId
+}
+
 func getActionName(verb string) string {
 	switch verb {
 	case "get":
@@ -154,10 +161,9 @@ func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType
 	tmp := make([]AuthorizationActionInfo, 1)
 	tmp[0] = getDataAction(req, clusterType)
 	checkaccessreq.Actions = tmp
-	checkaccessreq.Resource.Id = resourceId
+	checkaccessreq.Resource.Id = getScope(resourceId, req.ResourceAttributes)
 
 	fmt.Printf("checkaccess req: %s", checkaccessreq)
-	fmt.Printf("User:%s, Groups:%s, Action:%s", req.User, req.Groups, getDataAction(req,clusterType))
 
 	bytes, err := json.Marshal(checkaccessreq)
 	if err != nil {
