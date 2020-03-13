@@ -61,7 +61,7 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, useGroup
 	u := &AccessInfo{
 		client: http.DefaultClient,
 		headers: http.Header{
-			"Content-Type": []string{"application/x-www-form-urlencoded"},
+			"Content-Type": []string{"application/json"},
 		},
 		apiURL:          rbacURL,
 		tokenProvider:   tokenProvider,
@@ -151,7 +151,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	checkAccessURL.RawQuery = params.Encode()
 
 	fmt.Printf("URL : %s", checkAccessURL.String())
-	if a.IsTokenExpired() {	
+	if a.IsTokenExpired() {
 		a.RefreshToken()
 	}
 
