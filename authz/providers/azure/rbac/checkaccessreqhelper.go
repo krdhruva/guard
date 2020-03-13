@@ -25,7 +25,7 @@ import (
 )
 
 type SubjectInfoAttributes struct {
-	ObjectId              sring    `json:"ObjectId"`
+	ObjectId              string   `json:"ObjectId"`
 	Groups                []string `json:"Groups,omitempty"`
 	ExpandGroupMembership bool     `json:"xms-pasrp-retrievegroupmemberships,omitempty"`
 }
