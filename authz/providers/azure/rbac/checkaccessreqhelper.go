@@ -171,8 +171,8 @@ func getDataAction(subRevReq *authzv1.SubjectAccessReviewSpec, clusterType strin
 	return authInfo
 }
 
-func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType, resourceId string) ([]byte, error) {
-	var checkaccessreq CheckAccessRequest
+func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType, resourceId string) (*CheckAccessRequest, error) {
+	checkaccessreq := CheckAccessRequest{}
 	checkaccessreq.Subject.Attributes.ObjectId = getUserId(req.User)
 
 	if len(req.Groups) > 0 {
