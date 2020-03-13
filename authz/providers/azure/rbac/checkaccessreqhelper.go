@@ -171,7 +171,7 @@ func getDataAction(subRevReq *authzv1.SubjectAccessReviewSpec, clusterType strin
 	return authInfo
 }
 
-func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType, resourceId string) (*CheckAccessRequest, error) {
+func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType, resourceId string) *CheckAccessRequest {
 	checkaccessreq := CheckAccessRequest{}
 	checkaccessreq.Subject.Attributes.ObjectId = getUserId(req.User)
 
@@ -188,19 +188,7 @@ func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType
 	checkaccessreq.Actions = tmp
 	checkaccessreq.Resource.Id = getScope(resourceId, req.ResourceAttributes)
 
-	fmt.Printf("scope is: %s", checkaccessreq.Resource.Id)
-	bytes, err := json.Marshal(checkaccessreq)
-	if err != nil {
-		fmt.Println("error in marshalling")
-		fmt.Println(err)
-		return nil, err
-	} else {
-		var jsonStr interface{}
-		json.Unmarshal([]byte(bytes), &jsonStr)
-		fmt.Println("unmarshelled:")
-		fmt.Println(jsonStr)
-		return bytes, nil
-	}
+	return &checkaccessreq, nil
 }
 
 func getNameSpaceScope(req *authzv1.SubjectAccessReviewSpec, str *string) bool {
