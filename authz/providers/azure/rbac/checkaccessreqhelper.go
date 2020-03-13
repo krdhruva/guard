@@ -198,7 +198,7 @@ func getNameSpaceScope(req *authzv1.SubjectAccessReviewSpec, str *string) bool {
 }
 
 func ConvertCheckAccessResponse(body []byte) *authzv1.SubjectAccessReviewStatus {
-	var response AuthorizationDecesion
+	var response []AuthorizationDecesion
 	var allowed bool
 	var denied bool
 	var verdict string
@@ -208,12 +208,12 @@ func ConvertCheckAccessResponse(body []byte) *authzv1.SubjectAccessReviewStatus 
 		fmt.Printf("failed to parse checkaccess response!%s", err.Error())
 	}
 
-	if response.decesion == "Allowed" {
+	if response[0].decesion == "Allowed" {
 		allowed = true
-	} else if response.decesion == "Not Allowed" {
+	} else if response[0].decesion == "Not Allowed" {
 		allowed = false
 		verdict = "user does not have access to the resource"
-	} else if response.decesion == "Denied" {
+	} else if response[0].decesion == "Denied" {
 		allowed = false
 		denied = true
 		verdict = "user does not have access to the resource"
