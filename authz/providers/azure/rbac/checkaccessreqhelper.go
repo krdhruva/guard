@@ -50,51 +50,51 @@ type CheckAccessRequest struct {
 }
 
 type AccessDecesion struct {
-	decesion string `json:"accessDecesion"`
+	decesion string `json:"accessDecision"`
 }
 
 type RoleAssignment struct {
-	Id               string `json:"Id"`
-	RoleDefinitionId string `json:"RoleDefinitionId"`
-	PrincipalId      string `json:"PrincipalId"`
-	PrincipalType    string `json:"PrincipalType"`
-	Scope            string `json:"Scope"`
-	Condition        string `json:"Condition"`
-	ConditionVersion string `json:"ConditionVersion"`
-	CanDelegate      bool   `json:"CanDelegate"`
+	Id               string `json:"Id,omitempty"`
+	RoleDefinitionId string `json:"RoleDefinitionId,omitempty"`
+	PrincipalId      string `json:"PrincipalId,omitempty"`
+	PrincipalType    string `json:"PrincipalType,omitempty"`
+	Scope            string `json:"Scope,omitempty"`
+	Condition        string `json:"Condition,omitempty"`
+	ConditionVersion string `json:"ConditionVersion,omitempty"`
+	CanDelegate      bool   `json:"CanDelegate,omitempty"`
 }
 
 type AzureRoleAssignment struct {
-	DelegatedManagedIdentityResourceId string `json:"DelegatedManagedIdentityResourceId"`
+	DelegatedManagedIdentityResourceId string `json:"DelegatedManagedIdentityResourceId,omitempty"`
 	RoleAssignment
 }
 
 type Permission struct {
-	actions       []string `json:"actions"`
-	noactions     []string `json:"noactions"`
-	dataactions   []string `json:"dataactions"`
-	nodataactions []string `json:"nodataactions"`
+	actions       []string `json:"actions,omitempty"`
+	noactions     []string `json:"noactions,omitempty"`
+	dataactions   []string `json:"dataactions,omitempty"`
+	nodataactions []string `json:"nodataactions,omitempty"`
 }
 
 type Principal struct {
-	Id   string `json:"Id"`
-	Type string `json:"Type"`
+	Id   string `json:"Id,omitempty"`
+	Type string `json:"Type,omitempty"`
 }
 
 type DenyAssignment struct {
-	Id          string `json:"Id"`
-	Name        string `json:"Name"`
-	Description string `json:"Description"`
+	Id          string `json:"Id,omitempty"`
+	Name        string `json:"Name,omitempty"`
+	Description string `json:"Description,omitempty"`
 	Permission
-	Scope                   string `json:"Scope"`
-	DoNotApplyToChildScopes bool   `json:"DoNotApplyToChildScopes"`
+	Scope                   string `json:"Scope,omitempty"`
+	DoNotApplyToChildScopes bool   `json:"DoNotApplyToChildScopes,omitempty"`
 	principals              []Principal
 	excludeprincipals       []Principal
-	Condition               string `json:"Condition"`
-	ConditionVersion        string `json:"ConditionVersion"`
+	Condition               string `json:"Condition,omitempty"`
+	ConditionVersion        string `json:"ConditionVersion,omitempty"`
 }
 type AzureDenyAssignment struct {
-	IsSystemProtected string `json:"IsSystemProtected"`
+	IsSystemProtected string `json:"IsSystemProtected,omitempty"`
 	DenyAssignment
 }
 
