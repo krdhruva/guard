@@ -188,7 +188,7 @@ func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType
 	checkaccessreq.Actions = tmp
 	checkaccessreq.Resource.Id = getScope(resourceId, req.ResourceAttributes)
 
-	return &checkaccessreq, nil
+	return &checkaccessreq
 }
 
 func getNameSpaceScope(req *authzv1.SubjectAccessReviewSpec, str *string) bool {
