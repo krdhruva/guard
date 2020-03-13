@@ -174,6 +174,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	}
 	// Set the auth headers for the request
 	req.Header = a.headers
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	if glog.V(10) {
 		cmd, _ := http2curl.GetCurlCommand(req)
