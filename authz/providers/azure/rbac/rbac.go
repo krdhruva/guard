@@ -59,10 +59,8 @@ type AccessInfo struct {
 
 func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, useGroupUID bool, clsuterType, resourceId string) (*AccessInfo, error) {
 	u := &AccessInfo{
-		client: http.DefaultClient,
-		headers: http.Header{
-			"Content-Type": []string{"application/json"},
-		},
+		client:          http.DefaultClient,
+		headers:         http.Header{},
 		apiURL:          rbacURL,
 		tokenProvider:   tokenProvider,
 		azureResourceId: resourceId}
