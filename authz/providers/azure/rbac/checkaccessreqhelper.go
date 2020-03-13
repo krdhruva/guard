@@ -106,15 +106,13 @@ type AuthorizationDecesion struct {
 }
 
 func getUserId(userName string) string {
-	return "92634de3-03f6-4092-b41b-20616b11a464"
+	return "63e8a863-9ae9-4f3c-b0b7-fd9df05c712e"
 }
 
 func getScope(resourceId string, attr *authzv1.ResourceAttributes) string {
 	if attr != nil && attr.Namespace != "" {
-		fmt.Println("in if")
 		return resourceId + "/namespace/" + attr.Namespace
 	}
-	fmt.Println("not in in")
 	return resourceId
 }
 
@@ -155,19 +153,16 @@ func getDataAction(subRevReq *authzv1.SubjectAccessReviewSpec, clusterType strin
 		IsDataAction: true}
 
 	authInfo.AuthorizationEntity.Id = clusterType
-	fmt.Printf("clusterType:%s", clusterType)
 	if subRevReq.ResourceAttributes != nil {
 		if subRevReq.ResourceAttributes.Group != "" {
-			fmt.Printf("group is:%s", subRevReq.ResourceAttributes.Group)
 			authInfo.AuthorizationEntity.Id += "/" + subRevReq.ResourceAttributes.Group
 		}
-		fmt.Printf("resource:%s", subRevReq.ResourceAttributes.Resource)
 		authInfo.AuthorizationEntity.Id += "/" + subRevReq.ResourceAttributes.Resource + "/" + getActionName(subRevReq.ResourceAttributes.Verb)
+		fmt.Printf("/n Group:%s, Resource:%s, Verb:%s", subRevReq.ResourceAttributes.Group, subRevReq.ResourceAttributes.Resource, subRevReq.ResourceAttributes.Verb)
 	} else if subRevReq.NonResourceAttributes != nil {
-		fmt.Printf("non res:%s", subRevReq.NonResourceAttributes.Path)
 		authInfo.AuthorizationEntity.Id += subRevReq.NonResourceAttributes.Path + "/" + getActionName(subRevReq.NonResourceAttributes.Verb)
+		fmt.Printf("/n Path:%s, Verb:%s", subRevReq.NonResourceAttributes.Path, subRevReq.NonResourceAttributes.Verb)
 	}
-
 	return authInfo
 }
 
@@ -194,7 +189,6 @@ func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType
 func getNameSpaceScope(req *authzv1.SubjectAccessReviewSpec, str *string) bool {
 	if req.ResourceAttributes != nil && req.ResourceAttributes.Namespace != "" {
 		str := "/namespace" + req.ResourceAttributes.Namespace
-		fmt.Printf("print str %s", str)
 		return true
 	}
 	return false

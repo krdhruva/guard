@@ -59,8 +59,10 @@ type AccessInfo struct {
 
 func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, useGroupUID bool, clsuterType, resourceId string) (*AccessInfo, error) {
 	u := &AccessInfo{
-		client:          http.DefaultClient,
-		headers:         http.Header{},
+		client: http.DefaultClient,
+		headers: http.Header{
+			"Content-Type": []string{"application/x-www-form-urlencoded"},
+		},
 		apiURL:          rbacURL,
 		tokenProvider:   tokenProvider,
 		azureResourceId: resourceId}
@@ -136,7 +138,6 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 
 	checkAccessBody := PrepareCheckAccessRequest(request, a.clusterType, a.azureResourceId)
 	checkAccessURL := *a.apiURL
-	fmt.Printf("Initial url:%s", checkAccessURL.String())
 	// Append the path for azure cluster resource id
 	checkAccessURL.Path = path.Join(checkAccessURL.Path, a.azureResourceId)
 	var str string
@@ -150,33 +151,24 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	checkAccessURL.RawQuery = params.Encode()
 
 	fmt.Printf("URL : %s", checkAccessURL.String())
-	if a.IsTokenExpired() {
-		fmt.Println("Refreshing tokne")
+	if a.IsTokenExpired() {	
 		a.RefreshToken()
 	}
 
 	buf := new(bytes.Buffer)
-	fmt.Printf("check access body: %s", checkAccessBody)
 	if err := json.NewEncoder(buf).Encode(checkAccessBody); err != nil {
-		fmt.Printf("error while encoding chceck access %s", err.Error())
 		return nil, errors.Wrap(err, "error encoding check access request")
 	}
 
 	binaryData, _ := json.MarshalIndent(checkAccessBody, "", "    ")
 	fmt.Printf("binary data:%s", binaryData)
 
-	var conv CheckAccessRequest
-	json.Unmarshal(binaryData, &conv)
-	fmt.Printf("converted back:%s", conv)
-
 	req, err := http.NewRequest(http.MethodPost, checkAccessURL.String(), buf)
 	if err != nil {
-		fmt.Printf("error while creating chceck access %s", err.Error())
 		return nil, errors.Wrap(err, "error creating check access request")
 	}
 	// Set the auth headers for the request
 	req.Header = a.headers
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	if glog.V(10) {
 		cmd, _ := http2curl.GetCurlCommand(req)
