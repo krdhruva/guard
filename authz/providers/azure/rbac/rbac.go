@@ -17,6 +17,7 @@ package rbac
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -157,9 +158,14 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 		a.RefreshToken()
 	}
 
-	req, err := http.NewRequest(http.MethodPost, checkAccessURL.String(), bytes.NewReader(checkAccessBody))
+	buf := new(bytes.Buffer)
+	if err := json.NewEncoder(buf).Encode(checkAccessBody); err != nil {
+		fmt.Printf("error while encoding chceck access %s", err.Error())
+		return nil, errors.Wrap(err, "error encoding check access request")
+	}
+	req, err := http.NewRequest(http.MethodPost, checkAccessURL.String(), buf)
 	if err != nil {
-		fmt.Printf("error while creating chceck access %s", err)
+		fmt.Printf("error while creating chceck access %s", err.Error())
 		return nil, errors.Wrap(err, "error creating check access request")
 	}
 	// Set the auth headers for the request
