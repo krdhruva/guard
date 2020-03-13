@@ -25,7 +25,7 @@ import (
 )
 
 type SubjectInfoAttributes struct {
-	ObjectId              string   `json:"ObjectId"`
+	ObjectId              sring    `json:"ObjectId"`
 	Groups                []string `json:"Groups,omitempty"`
 	ExpandGroupMembership bool     `json:"xms-pasrp-retrievegroupmemberships,omitempty"`
 }
@@ -54,18 +54,18 @@ type AccessDecesion struct {
 }
 
 type RoleAssignment struct {
-	Id               string `json:"Id,omitempty"`
-	RoleDefinitionId string `json:"RoleDefinitionId,omitempty"`
-	PrincipalId      string `json:"PrincipalId,omitempty"`
-	PrincipalType    string `json:"PrincipalType,omitempty"`
-	Scope            string `json:"Scope,omitempty"`
-	Condition        string `json:"Condition,omitempty"`
-	ConditionVersion string `json:"ConditionVersion,omitempty"`
-	CanDelegate      bool   `json:"CanDelegate,omitempty"`
+	Id               string `json:"Id"`
+	RoleDefinitionId string `json:"RoleDefinitionId"`
+	PrincipalId      string `json:"PrincipalId"`
+	PrincipalType    string `json:"PrincipalType"`
+	Scope            string `json:"Scope"`
+	Condition        string `json:"Condition"`
+	ConditionVersion string `json:"ConditionVersion"`
+	CanDelegate      bool   `json:"CanDelegate"`
 }
 
 type AzureRoleAssignment struct {
-	DelegatedManagedIdentityResourceId string `json:"DelegatedManagedIdentityResourceId,omitempty"`
+	DelegatedManagedIdentityResourceId string `json:"DelegatedManagedIdentityResourceId"`
 	RoleAssignment
 }
 
@@ -77,34 +77,34 @@ type Permission struct {
 }
 
 type Principal struct {
-	Id   string `json:"Id,omitempty"`
-	Type string `json:"Type,omitempty"`
+	Id   string `json:"Id"`
+	Type string `json:"Type"`
 }
 
 type DenyAssignment struct {
-	Id          string `json:"Id,omitempty"`
-	Name        string `json:"Name,omitempty"`
-	Description string `json:"Description,omitempty"`
+	Id          string `json:"Id"`
+	Name        string `json:"Name"`
+	Description string `json:"Description"`
 	Permission
-	Scope                   string `json:"Scope,omitempty"`
-	DoNotApplyToChildScopes bool   `json:"DoNotApplyToChildScopes,omitempty"`
+	Scope                   string `json:"Scope"`
+	DoNotApplyToChildScopes bool   `json:"DoNotApplyToChildScopes"`
 	principals              []Principal
 	excludeprincipals       []Principal
-	Condition               string `json:"Condition,omitempty"`
-	ConditionVersion        string `json:"ConditionVersion,omitempty"`
+	Condition               string `json:"Condition"`
+	ConditionVersion        string `json:"ConditionVersion"`
 }
 type AzureDenyAssignment struct {
-	IsSystemProtected string `json:"IsSystemProtected,omitempty"`
+	IsSystemProtected string `json:"IsSystemProtected"`
 	DenyAssignment
 }
 
 type AuthorizationDecesion struct {
-	decesion            string  `json:"accessDecision"`
-	ActionId            string  `json:"actionId"`
-	isDataAction        bool    `json:"isDataAction"`
-	azureRoleAssignment *string `json:"roleAssignment"`
-	azureDenyAssignment *string `json:"denyAssignment"`
-	timeToLiveInMs      int     `json:"timeToLiveInMs"`
+	decesion            string              `json:"accessDecision"`
+	ActionId            string              `json:"actionId"`
+	isDataAction        bool                `json:"isDataAction"`
+	azureRoleAssignment AzureRoleAssignment `json:"roleAssignment"`
+	azureDenyAssignment AzureDenyAssignment `json:"denyAssignment"`
+	timeToLiveInMs      int                 `json:"timeToLiveInMs"`
 }
 
 func getUserId(userName string) string {
