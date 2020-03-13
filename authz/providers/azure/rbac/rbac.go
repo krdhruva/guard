@@ -195,8 +195,17 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	fmt.Printf("response:%s", data)
 	if resp.StatusCode != http.StatusOK {
 		fmt.Printf("request failed %s with status code %d and response is %s", req.URL.String(), resp.StatusCode, string(data))
+		if resp.StatusCode == http.StatusTooManyRequests {
+			glog.V(10).Infoln("Moving to another ARM instance!")
+			a.client.CloseIdleConnections()
+			//to-do retry for this
+			return nil, errors.Errorf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
+		}
 
-		return nil, errors.Errorf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
+		if resp.StatusCode >= http.StatusInternalServerError {
+			return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "server error", Denied: false}, nil
+		}
+
 	} else {
 		remaining := resp.Header.Get("x-ms-ratelimit-remaining-subscription-reads")
 		fmt.Printf("remaining req: %s", remaining)

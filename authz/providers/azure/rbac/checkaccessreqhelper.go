@@ -210,10 +210,8 @@ func ConvertCheckAccessResponse(body []byte) *authzv1.SubjectAccessReviewStatus 
 
 	if response[0].decesion == "Allowed" {
 		allowed = true
-	} else if response[0].decesion == "NotAllowed" {
-		allowed = false
-		verdict = "user does not have access to the resource"
-	} else if response[0].decesion == "Denied" {
+		verdict = "allowed"
+	} else {
 		allowed = false
 		denied = true
 		verdict = "user does not have access to the resource"
