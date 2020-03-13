@@ -77,8 +77,15 @@ func write(w http.ResponseWriter, info *auth.UserInfo, err error) {
 func writeAuthzResponse(w http.ResponseWriter, resp *authz.SubjectAccessReviewStatus) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("x-content-type-options", "nosniff")
-	w.WriteHeader(http.StatusOK)
 
+	if resp.Allowed {
+		w.WriteHeader(http.StatusOK)
+	} else {
+		w.WriteHeader(http.StatusForbidden)
+	}
+
+	data, _ := json.MarshalIndent(resp, "", "  ")
+	fmt.Printf("final data:%s", string(data))
 	err := json.NewEncoder(w).Encode(resp)
 	if err != nil {
 		panic(err)
