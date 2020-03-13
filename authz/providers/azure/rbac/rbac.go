@@ -142,6 +142,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	checkAccessURL.Path = path.Join(checkAccessURL.Path, a.azureResourceId)
 	var str string
 	if getNameSpaceScope(request, &str) {
+		fmt.Printf("str in rbac:%s", str)
 		checkAccessURL.Path = path.Join(checkAccessURL.Path, str)
 	}
 
