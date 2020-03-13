@@ -74,7 +74,7 @@ func write(w http.ResponseWriter, info *auth.UserInfo, err error) {
 	}
 }
 
-func writeAuthzResponse(w http.ResponseWriter, access *authz.SubjectAccessReviewStatus) {
+func writeAuthzResponse(w http.ResponseWriter, spec *authz.SubjectAccessReviewSpec, access *authz.SubjectAccessReviewStatus) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("x-content-type-options", "nosniff")
 
@@ -90,7 +90,8 @@ func writeAuthzResponse(w http.ResponseWriter, access *authz.SubjectAccessReview
 		},
 	}
 
-	resp.Status = access
+	resp.spec = *spec
+	resp.Status = *access
 
 	data, _ := json.MarshalIndent(resp, "", "  ")
 	fmt.Printf("final data:%s", string(data))
