@@ -154,10 +154,19 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	}
 
 	buf := new(bytes.Buffer)
+	fmt.Printf("check access body: %s", checkAccessBody)
 	if err := json.NewEncoder(buf).Encode(checkAccessBody); err != nil {
 		fmt.Printf("error while encoding chceck access %s", err.Error())
 		return nil, errors.Wrap(err, "error encoding check access request")
 	}
+
+	binaryData, _ := json.Marshal(checkAccessBody)
+	fmt.Printf("binary data:%s", binaryData)
+
+	var conv CheckAccessRequest
+	json.Unmarshal(binaryData, &conv)
+	fmt.Printf("converted back:%s", conv)
+
 	req, err := http.NewRequest(http.MethodPost, checkAccessURL.String(), buf)
 	if err != nil {
 		fmt.Printf("error while creating chceck access %s", err.Error())
