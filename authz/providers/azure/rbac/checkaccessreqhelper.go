@@ -99,10 +99,12 @@ type AzureDenyAssignment struct {
 }
 
 type AuthorizationDecesion struct {
-	ActionId string `json:"ActionId"`
+	ActionId     string `json:"actionId"`
+	isDataAction bool   `json:"isDataAction"`
 	AccessDecesion
 	AzureRoleAssignment
 	AzureDenyAssignment
+	timeToLiveInMs string `json:"timeToLiveInMs"`
 }
 
 func getUserId(userName string) string {

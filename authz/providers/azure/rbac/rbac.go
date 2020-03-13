@@ -191,6 +191,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	}
 
 	data, _ := ioutil.ReadAll(resp.Body)
+	fmt.Printf("response:%s", data)
 	if resp.StatusCode != http.StatusOK {
 		fmt.Printf("request failed %s with status code %d and response is %s", req.URL.String(), resp.StatusCode, string(data))
 
