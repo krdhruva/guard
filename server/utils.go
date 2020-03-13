@@ -82,18 +82,18 @@ func writeAuthzResponse(w http.ResponseWriter, access *authz.SubjectAccessReview
 		w.WriteHeader(http.StatusOK)
 	} else {
 		w.WriteHeader(http.StatusForbidden)
-	}	
+	}
 	resp := authz.SubjectAccessReview{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: authz.SchemeGroupVersion.String(),
 			Kind:       "SubjectAccessReview",
-			Status: access
+			Status:     access,
 		},
 	}
 
 	data, _ := json.MarshalIndent(resp, "", "  ")
 	fmt.Printf("final data:%s", string(data))
-	
+
 	err := json.NewEncoder(w).Encode(resp)
 	if err != nil {
 		panic(err)
