@@ -160,7 +160,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 		return nil, errors.Wrap(err, "error encoding check access request")
 	}
 
-	binaryData, _ := json.Marshal(checkAccessBody)
+	binaryData, _ := json.MarshalIndent(checkAccessBody, "", "    ")
 	fmt.Printf("binary data:%s", binaryData)
 
 	var conv CheckAccessRequest
