@@ -88,8 +88,9 @@ func writeAuthzResponse(w http.ResponseWriter, access *authz.SubjectAccessReview
 			APIVersion: authz.SchemeGroupVersion.String(),
 			Kind:       "SubjectAccessReview",
 		},
-		Status: access,
 	}
+
+	resp.Status = access
 
 	data, _ := json.MarshalIndent(resp, "", "  ")
 	fmt.Printf("final data:%s", string(data))
