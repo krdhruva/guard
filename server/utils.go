@@ -87,8 +87,8 @@ func writeAuthzResponse(w http.ResponseWriter, access *authz.SubjectAccessReview
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: authz.SchemeGroupVersion.String(),
 			Kind:       "SubjectAccessReview",
-			Status:     access,
 		},
+		Status: access,
 	}
 
 	data, _ := json.MarshalIndent(resp, "", "  ")
