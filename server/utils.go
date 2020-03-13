@@ -78,11 +78,12 @@ func writeAuthzResponse(w http.ResponseWriter, spec *authz.SubjectAccessReviewSp
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("x-content-type-options", "nosniff")
 
-	if access.Allowed {
+	w.WriteHeader(http.StatusOK)
+	/*if access.Allowed {
 		w.WriteHeader(http.StatusOK)
 	} else {
 		w.WriteHeader(http.StatusForbidden)
-	}
+	}*/
 	resp := authz.SubjectAccessReview{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: authz.SchemeGroupVersion.String(),
