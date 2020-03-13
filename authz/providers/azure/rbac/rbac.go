@@ -146,7 +146,11 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 		checkAccessURL.Path = path.Join(checkAccessURL.Path, str)
 	}
 
-	checkAccessURL.Path = path.Join(checkAccessURL.Path, "/providers/Microsoft.Authorization/checkaccess?api-version=2018-09-01-preview")
+	checkAccessURL.Path = path.Join(checkAccessURL.Path, "/providers/Microsoft.Authorization/checkaccess")
+	params := url.Values{}
+	params.Add("api-version", "2018-09-01-preview")
+	checkAccessURL.RawQuery = params.Encode()
+
 	fmt.Printf("URL : %s", checkAccessURL.String())
 	if a.IsTokenExpired() {
 		fmt.Println("Refreshing tokne")
