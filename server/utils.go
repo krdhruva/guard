@@ -90,7 +90,7 @@ func writeAuthzResponse(w http.ResponseWriter, spec *authz.SubjectAccessReviewSp
 		},
 	}
 
-	resp.spec = *spec
+	resp.Spec = *spec
 	resp.Status = *access
 
 	data, _ := json.MarshalIndent(resp, "", "  ")
