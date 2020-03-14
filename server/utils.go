@@ -91,7 +91,7 @@ func writeAuthzResponse(w http.ResponseWriter, spec *authz.SubjectAccessReviewSp
 
 	if err != nil {
 		printStackTrace(err)
-		resp.EvaluationError = err.Error(),
+		resp.EvaluationError = err.Error()
 	}
 
 	data, _ := json.MarshalIndent(resp, "", "  ")
