@@ -51,7 +51,7 @@ type CheckAccessRequest struct {
 }
 
 type AccessDecesion struct {
-	decesion string `json:"accessDecision"`
+	Decesion string `json:"accessDecision"`
 }
 
 type RoleAssignment struct {
@@ -71,10 +71,10 @@ type AzureRoleAssignment struct {
 }
 
 type Permission struct {
-	actions       []string `json:"actions,omitempty"`
-	noactions     []string `json:"noactions,omitempty"`
-	dataactions   []string `json:"dataactions,omitempty"`
-	nodataactions []string `json:"nodataactions,omitempty"`
+	Actions       []string `json:"actions,omitempty"`
+	NoActions     []string `json:"noactions,omitempty"`
+	DataActions   []string `json:"dataactions,omitempty"`
+	NoDataActions []string `json:"nodataactions,omitempty"`
 }
 
 type Principal struct {
@@ -100,12 +100,12 @@ type AzureDenyAssignment struct {
 }
 
 type AuthorizationDecesion struct {
-	decesion            string              `json:"accessDecision"`
+	Decesion            string              `json:"accessDecision"`
 	ActionId            string              `json:"actionId"`
-	isDataAction        bool                `json:"isDataAction"`
-	azureRoleAssignment AzureRoleAssignment `json:"roleAssignment"`
-	azureDenyAssignment AzureDenyAssignment `json:"denyAssignment"`
-	timeToLiveInMs      int                 `json:"timeToLiveInMs"`
+	IsDataAction        bool                `json:"isDataAction"`
+	AzureRoleAssignment AzureRoleAssignment `json:"roleAssignment"`
+	AzureDenyAssignment AzureDenyAssignment `json:"denyAssignment"`
+	TimeToLiveInMs      int                 `json:"timeToLiveInMs"`
 }
 
 func getUserId(userName string) string {
@@ -146,13 +146,15 @@ func getActionName(verb string) string {
 	case "get":
 		fallthrough
 	case "list":
+		fallthrough
+	case "watch":
 		return "read"
-	case "put":
+	case "create":
+		return "action"
+	case "update":
 		return "write"
 	case "delete":
 		return "delete"
-	case "post":
-		return "action"
 	default:
 		return ""
 	}
@@ -178,9 +180,9 @@ func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType
 	checkaccessreq := CheckAccessRequest{}
 	checkaccessreq.Subject.Attributes.ObjectId = getUserId(req.User)
 
-	if len(req.Groups) > 0 {
+	if req.Groups != nil && len(req.Groups) > 0 {
 		groups := getSecGroups(req.Groups)
-		if len(groups) > 0 {
+		if groups != nil && len(groups) > 0 {
 			checkaccessreq.Subject.Attributes.Groups = groups
 			checkaccessreq.Subject.Attributes.ExpandGroupMembership = true
 		}
@@ -214,7 +216,7 @@ func ConvertCheckAccessResponse(body []byte) (*authzv1.SubjectAccessReviewStatus
 		return nil, errors.Wrap(err, "Error in unmarshalling check access response.")
 	}
 
-	if response[0].decesion == "Allowed" {
+	if response[0].Decesion == "Allowed" {
 		allowed = true
 		verdict = "allowed"
 	} else {
