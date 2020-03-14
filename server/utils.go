@@ -74,7 +74,7 @@ func write(w http.ResponseWriter, info *auth.UserInfo, err error) {
 	}
 }
 
-func writeAuthzResponse(w http.ResponseWriter, spec *authzv1.SubjectAccessReviewSpec, accessInfo *authz.SubjectAccessReviewStatus) {
+func writeAuthzResponse(w http.ResponseWriter, spec *authz.SubjectAccessReviewSpec, accessInfo *authz.SubjectAccessReviewStatus) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("x-content-type-options", "nosniff")
 	w.WriteHeader(http.StatusOK)
