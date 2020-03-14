@@ -17,6 +17,7 @@ package azure
 
 import (
 	"fmt"
+
 	"github.com/appscode/guard/auth/providers/azure"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
@@ -30,8 +31,9 @@ const (
 )
 
 type Options struct {
-	AuthzMode  string
-	ResourceId string
+	AuthzMode   string
+	ResourceId  string
+	AKSAuthzURL string
 }
 
 func NewOptions() Options {
@@ -41,6 +43,7 @@ func NewOptions() Options {
 func (o *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.AuthzMode, "azure.authz-mode", "", "authz mode to call RBAC api, valid value is either aks or arc")
 	fs.StringVar(&o.ResourceId, "azure.resource-id", "", "azure cluster resource id (//subscription/<subName>/resourcegroups/<RGname>/providers/Microsoft.ContainerService/managedClusters/<clustername> for AKS or //subscription/<subName>/resourcegroups/<RGname>/providers/Microsoft.Kubernetes/connectedClusters/<clustername> for arc) to be used as scope for RBAC check")
+	fs.StringVar(&o.AKSAuthzURL, "azure.aks-authz-url", "", "url to call for AKS Authz flow")
 }
 
 func (o *Options) Validate(azure azure.Options) []error {
@@ -54,8 +57,8 @@ func (o *Options) Validate(azure azure.Options) []error {
 		errs = append(errs, errors.New("azure.resource-id must be non-empty for authrization"))
 	}
 
-	if o.AuthzMode == AKSAuthzMode && azure.AKSTokenURL == "" {
-		errs = append(errs, errors.New("azure.aks-token-url must be non-empty"))
+	if o.AuthzMode == AKSAuthzMode && o.AKSAuthzURL == "" {
+		errs = append(errs, errors.New("azure.aks-authz-url must be non-empty"))
 	}
 
 	if o.AuthzMode == ARCAuthzMode {
@@ -73,13 +76,17 @@ func (o *Options) Validate(azure azure.Options) []error {
 func (o Options) Apply(d *apps.Deployment) (extraObjs []runtime.Object, err error) {
 	container := d.Spec.Template.Spec.Containers[0]
 	args := container.Args
-	
+
 	switch o.AuthzMode {
 	case AKSAuthzMode:
 		fallthrough
 	case ARCAuthzMode:
 		args = append(args, fmt.Sprintf("--azure.authz-mode=%s", o.AuthzMode))
-		args = append(args, fmt.Sprintf("--azure.resource-id=%s", o.ResourceId))	
+		args = append(args, fmt.Sprintf("--azure.resource-id=%s", o.ResourceId))
+	}
+
+	if o.AKSAuthzURL != "" {
+		args = append(args, fmt.Sprintf("--azure.aks-authz-url=%s", o.AKSAuthzURL))
 	}
 
 	container.Args = args
@@ -87,4 +94,3 @@ func (o Options) Apply(d *apps.Deployment) (extraObjs []runtime.Object, err erro
 
 	return extraObjs, nil
 }
-

@@ -21,6 +21,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 	authzv1 "k8s.io/api/authorization/v1"
 )
 
@@ -108,7 +109,14 @@ type AuthorizationDecesion struct {
 }
 
 func getUserId(userName string) string {
-	return "63e8a863-9ae9-4f3c-b0b7-fd9df05c712e"
+	switch userName {
+	case "krdhruva@microsoft.com":
+		return "63e8a863-9ae9-4f3c-b0b7-fd9df05c712e"
+	case "test@KDOrg.onmicrosoft.com":
+		return "62103f2e-051d-48cc-af47-b1ff3deec630"
+	default:
+		return "62103f2e-051d-48cc-af47-b1ff3deec630"
+	}
 }
 
 func getScope(resourceId string, attr *authzv1.ResourceAttributes) string {
@@ -160,10 +168,8 @@ func getDataAction(subRevReq *authzv1.SubjectAccessReviewSpec, clusterType strin
 			authInfo.AuthorizationEntity.Id += "/" + subRevReq.ResourceAttributes.Group
 		}
 		authInfo.AuthorizationEntity.Id += "/" + subRevReq.ResourceAttributes.Resource + "/" + getActionName(subRevReq.ResourceAttributes.Verb)
-		fmt.Printf("/n Group:%s, Resource:%s, Verb:%s", subRevReq.ResourceAttributes.Group, subRevReq.ResourceAttributes.Resource, subRevReq.ResourceAttributes.Verb)
 	} else if subRevReq.NonResourceAttributes != nil {
 		authInfo.AuthorizationEntity.Id += subRevReq.NonResourceAttributes.Path + "/" + getActionName(subRevReq.NonResourceAttributes.Verb)
-		fmt.Printf("/n Path:%s, Verb:%s", subRevReq.NonResourceAttributes.Path, subRevReq.NonResourceAttributes.Verb)
 	}
 	return authInfo
 }
@@ -191,13 +197,12 @@ func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType
 func getNameSpaceScope(req *authzv1.SubjectAccessReviewSpec, str *string) bool {
 	if req.ResourceAttributes != nil && req.ResourceAttributes.Namespace != "" {
 		*str = "/namespace/" + req.ResourceAttributes.Namespace
-		fmt.Printf("str:%s", str)
 		return true
 	}
 	return false
 }
 
-func ConvertCheckAccessResponse(body []byte) *authzv1.SubjectAccessReviewStatus {
+func ConvertCheckAccessResponse(body []byte) (*authzv1.SubjectAccessReviewStatus, error) {
 	var response []AuthorizationDecesion
 	var allowed bool
 	var denied bool
@@ -206,6 +211,7 @@ func ConvertCheckAccessResponse(body []byte) *authzv1.SubjectAccessReviewStatus 
 	if err != nil {
 		glog.V(10).Infoln("Failed to parse checkacccess response!")
 		fmt.Printf("failed to parse checkaccess response!%s", err.Error())
+		return nil, errors.Wrap(err, "Error in unmarshalling check access response.")
 	}
 
 	if response[0].decesion == "Allowed" {
@@ -217,7 +223,5 @@ func ConvertCheckAccessResponse(body []byte) *authzv1.SubjectAccessReviewStatus 
 		verdict = "user does not have access to the resource"
 	}
 
-	fmt.Printf("allowed is %d, denied is %d, reason %s", allowed, denied, verdict)
-
-	return &authzv1.SubjectAccessReviewStatus{Allowed: allowed, Reason: verdict, Denied: denied}
+	return &authzv1.SubjectAccessReviewStatus{Allowed: allowed, Reason: verdict, Denied: denied}, nil
 }
