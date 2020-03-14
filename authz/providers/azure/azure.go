@@ -61,7 +61,7 @@ func New(opts Options, authOpts auth.Options) (authz.Interface, error) {
 		return nil, err
 	}
 
-	glog.V(3).Infof("AADEndpoint: %s, rbacHost:%s, issuer url: %v", authzInfoval.AADEndpoint, authzInfoVal.MSRbacHost, authzInfoVal.Issuer)
+	glog.V(3).Infof("AADEndpoint: %s, rbacHost:%s, issuer url: %v", authzInfoVal.AADEndpoint, authzInfoVal.MSRbacHost, authzInfoVal.Issuer)
 
 	switch opts.AuthzMode {
 	case ARCAuthzMode:
