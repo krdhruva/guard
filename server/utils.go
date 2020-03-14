@@ -74,10 +74,11 @@ func write(w http.ResponseWriter, info *auth.UserInfo, err error) {
 	}
 }
 
-func writeAuthzResponse(w http.ResponseWriter, spec *authz.SubjectAccessReviewSpec, accessInfo *authz.SubjectAccessReviewStatus) {
+func writeAuthzResponse(w http.ResponseWriter, spec *authz.SubjectAccessReviewSpec, accessInfo *authz.SubjectAccessReviewStatus, err error) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("x-content-type-options", "nosniff")
 	w.WriteHeader(http.StatusOK)
+
 	resp := authz.SubjectAccessReview{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: authz.SchemeGroupVersion.String(),
@@ -87,6 +88,11 @@ func writeAuthzResponse(w http.ResponseWriter, spec *authz.SubjectAccessReviewSp
 
 	resp.Spec = *spec
 	resp.Status = *accessInfo
+
+	if err != nil {
+		printStackTrace(err)
+		resp.EvaluationError = err.Error(),
+	}
 
 	data, _ := json.MarshalIndent(resp, "", "  ")
 	fmt.Printf("final data:%s", string(data))
