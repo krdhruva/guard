@@ -74,16 +74,10 @@ func write(w http.ResponseWriter, info *auth.UserInfo, err error) {
 	}
 }
 
-func writeAuthzResponse(w http.ResponseWriter, spec *authz.SubjectAccessReviewSpec, access *authz.SubjectAccessReviewStatus) {
+func writeAuthzResponse(w http.ResponseWriter, accessInfo *authz.SubjectAccessReviewStatus) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("x-content-type-options", "nosniff")
-
 	w.WriteHeader(http.StatusOK)
-	/*if access.Allowed {
-		w.WriteHeader(http.StatusOK)
-	} else {
-		w.WriteHeader(http.StatusForbidden)
-	}*/
 	resp := authz.SubjectAccessReview{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: authz.SchemeGroupVersion.String(),
@@ -91,8 +85,7 @@ func writeAuthzResponse(w http.ResponseWriter, spec *authz.SubjectAccessReviewSp
 		},
 	}
 
-	resp.Spec = *spec
-	resp.Status = *access
+	resp.Status = *accessInfo
 
 	data, _ := json.MarshalIndent(resp, "", "  ")
 	fmt.Printf("final data:%s", string(data))
