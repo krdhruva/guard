@@ -117,10 +117,10 @@ func (o *Options) Validate() []error {
 	}
 
 	if o.AuthzMode == ARCAuthzMode {
-		if azure.ClientSecret == "" {
+		if o.ClientSecret == "" {
 			errs = append(errs, errors.New("azure.client-secret must be non-empty"))
 		}
-		if azure.ClientID == "" {
+		if o.ClientID == "" {
 			errs = append(errs, errors.New("azure.client-id must be non-empty"))
 		}
 	}
