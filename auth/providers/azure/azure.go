@@ -107,13 +107,13 @@ func New(opts Options) (auth.Interface, error) {
 	return c, nil
 }
 
-type metadatJSON struct {
+type metadataJSON struct {
 	Issuer      string `json:"issuer"`
 	MsgraphHost string `json:"msgraph_host"`
 }
 
 // https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-convert-app-to-be-multi-tenant
-func getMetadata(aadEndpoint, tenantID string) (*metadatJSON, error) {
+func getMetadata(aadEndpoint, tenantID string) (*metadataJSON, error) {
 	metadataURL := aadEndpoint + tenantID + "/.well-known/openid-configuration"
 	glog.V(5).Infof("Querying metadata URL: %v", metadataURL)
 
@@ -132,7 +132,7 @@ func getMetadata(aadEndpoint, tenantID string) (*metadatJSON, error) {
 		return nil, err
 	}
 
-	var metadata metadatJSON
+	var metadata metadataJSON
 	err = json.Unmarshal(body, &metadata)
 	if err != nil {
 		return nil, err
@@ -300,7 +300,7 @@ func (c claims) string(key string) (string, error) {
 	return s, nil
 }
 
-func getAuthInfo(environment, tenantID string, getMetadata func(string, string) (*metadatJSON, error)) (*authInfo, error) {
+func getAuthInfo(environment, tenantID string, getMetadata func(string, string) (*metadataJSON, error)) (*authInfo, error) {
 	var err error
 	env := azure.PublicCloud
 	if environment != "" {
