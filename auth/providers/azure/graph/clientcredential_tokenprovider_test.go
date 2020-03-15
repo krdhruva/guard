@@ -60,7 +60,7 @@ func TestClientCredentialTokenProvider(t *testing.T) {
 		defer stopTestServer(t, s)
 
 		r := NewClientCredentialTokenProvider(clientID, clientSecret, s.URL, scope)
-		resp, err := r.Acquire(TokenOptions{inputAccessToken, ""})
+		resp, err := r.Acquire(inputAccessToken)
 		if err != nil {
 			t.Fatalf("refresh should not return error: %s", err)
 		}
@@ -101,7 +101,7 @@ func TestClientCredentialTokenProvider(t *testing.T) {
 		defer stopTestServer(t, s)
 
 		r := NewClientCredentialTokenProvider(clientID, clientSecret, s.URL, scope)
-		resp, err := r.Acquire(TokenOptions{inputAccessToken, ""})
+		resp, err := r.Acquire(inputAccessToken)
 		if err == nil {
 			t.Error("refresh should return error")
 		}

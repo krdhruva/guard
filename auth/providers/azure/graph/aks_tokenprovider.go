@@ -42,14 +42,14 @@ func NewAKSTokenProvider(tokenURL, tenantID string) TokenProvider {
 
 func (u *aksTokenProvider) Name() string { return u.name }
 
-func (u *aksTokenProvider) Acquire(token TokenOptions) (AuthResponse, error) {
+func (u *aksTokenProvider) Acquire(token string) (AuthResponse, error) {
 	var authResp = AuthResponse{}
 	tokenReq := struct {
 		TenantID    string `json:"tenantID,omitempty"`
 		AccessToken string `json:"accessToken,omitempty"`
 	}{
 		TenantID:    u.tenantID,
-		AccessToken: token.Token,
+		AccessToken: token,
 	}
 
 	buf := new(bytes.Buffer)
@@ -59,11 +59,6 @@ func (u *aksTokenProvider) Acquire(token TokenOptions) (AuthResponse, error) {
 	req, err := http.NewRequest(http.MethodPost, u.tokenURL, buf)
 	if err != nil {
 		return authResp, errors.Wrap(err, "failed to create request")
-	}
-	if token.TokenType != "" {
-		params := req.URL.Query()
-		params.Add("tokenType", token.TokenType)
-		req.URL.RawQuery = params.Encode()
 	}
 
 	req.Header.Set("Content-Type", "application/json")

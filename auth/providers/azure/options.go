@@ -90,7 +90,6 @@ func (o *Options) Validate() []error {
 	if o.TenantID == "" {
 		errs = append(errs, errors.New("azure.tenant-id must be non-empty"))
 	}
-
 	return errs
 }
 

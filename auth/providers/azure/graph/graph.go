@@ -145,7 +145,7 @@ func (u *UserInfo) getExpandedGroups(ids []string) (*GroupList, error) {
 }
 
 func (u *UserInfo) RefreshToken(token string) error {
-	resp, err := u.tokenProvider.Acquire(TokenOptions{token, ""})
+	resp, err := u.tokenProvider.Acquire(token)
 	if err != nil {
 		return errors.Errorf("%s: failed to refresh token: %s", u.tokenProvider.Name(), err)
 	}

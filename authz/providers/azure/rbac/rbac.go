@@ -94,7 +94,7 @@ func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string)
 }
 
 func (a *AccessInfo) RefreshToken() error {
-	resp, err := a.tokenProvider.Acquire(graph.TokenOptions{"", ""})
+	resp, err := a.tokenProvider.Acquire("")
 	if err != nil {
 		return errors.Errorf("%s: failed to refresh token: %s", a.tokenProvider.Name(), err)
 	}
