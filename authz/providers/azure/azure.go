@@ -16,7 +16,6 @@ limitations under the License.
 package azure
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/Azure/go-autorest/autorest/azure"
@@ -51,16 +50,16 @@ func New(opts auth.Options) (authz.Interface, error) {
 		Options: opts,
 	}
 
-	authzInfoVal, err := getAuthInfo(authOpts.Environment)
+	authzInfoVal, err := getAuthInfo(opts.Environment)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error in getAuthInfo %s")
 	}
 
 	switch opts.AuthzMode {
-	case ARCAuthzMode:
-		c.rbacClient = rbac.New(opts.ClientID, opts.ClientSecret, opts.TenantID, opts.UseGroupUID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, ARCAuthzMode, opts.ResourceId)
-	case AKSAuthzMode:
-		c.rbacClient = rbac.NewWithAKS(opts.AKSAuthzURL, opts.TenantID, authzInfoVal.ARMEndPoint, AKSAuthzMode, opts.ResourceId)
+	case auth.ARCAuthzMode:
+		c.rbacClient = rbac.New(opts.ClientID, opts.ClientSecret, opts.TenantID, opts.UseGroupUID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId)
+	case auth.AKSAuthzMode:
+		c.rbacClient = rbac.NewWithAKS(opts.AKSAuthzURL, opts.TenantID, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId)
 	}
 	return c, nil
 }
