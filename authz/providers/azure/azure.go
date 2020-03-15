@@ -40,7 +40,6 @@ func init() {
 type Authorizer struct {
 	Options
 	rbacClient *rbac.AccessInfo
-	ctx        context.Context
 }
 
 type authzInfo struct {
@@ -51,7 +50,6 @@ type authzInfo struct {
 func New(opts Options, authOpts auth.Options) (authz.Interface, error) {
 	c := &Authorizer{
 		Options: opts,
-		ctx:     context.Background(),
 	}
 
 	authzInfoVal, err := getAuthInfo(authOpts.Environment)
