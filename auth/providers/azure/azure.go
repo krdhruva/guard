@@ -79,7 +79,7 @@ func New(opts Options) (auth.Interface, error) {
 		Options: opts,
 		ctx:     context.Background(),
 	}
-	authInfoVal, err := getAuthInfo(c.Environment, c.TenantID, GetMetadata)
+	authInfoVal, err := getAuthInfo(c.Environment, c.TenantID, getMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ type MetadataJSON struct {
 }
 
 // https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-convert-app-to-be-multi-tenant
-func GetMetadata(aadEndpoint, tenantID string) (*MetadataJSON, error) {
+func getMetadata(aadEndpoint, tenantID string) (*MetadataJSON, error) {
 	metadataURL := aadEndpoint + tenantID + "/.well-known/openid-configuration"
 	glog.V(5).Infof("Querying metadata URL: %v", metadataURL)
 
