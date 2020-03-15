@@ -76,19 +76,18 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, useGroup
 	return u, nil
 }
 
-func New(clientID, clientSecret, tenantID string, useGroupUID bool, aadEndpoint, msrbacHost, clusterType, resourceId string) (*AccessInfo, error) {
-	rbacURL, _ := url.Parse(msrbacHost)
+func New(clientID, clientSecret, tenantID string, useGroupUID bool, aadEndpoint, armEndPoint, clusterType, resourceId string) (*AccessInfo, error) {
+	rbacURL, _ := url.Parse(armEndPoint)
 
 	tokenProvider := graph.NewClientCredentialTokenProvider(clientID, clientSecret,
 		aadEndpoint+tenantID+"/oauth2/v2.0/token",
-		msrbacHost+".default")
+		armEndPoint+".default")
 
 	return newAccessInfo(tokenProvider, rbacURL, useGroupUID, clusterType, resourceId)
 }
 
 func NewWithAKS(tokenURL, tenantID, msrbacHost, clusterType, resourceId string) (*AccessInfo, error) {
-	rbacEndpoint := "https://" + msrbacHost + "/"
-	rbacURL, _ := url.Parse(rbacEndpoint)
+	rbacURL, _ := url.Parse(armEndPoint)
 
 	tokenProvider := graph.NewAKSTokenProvider(tokenURL, tenantID)
 

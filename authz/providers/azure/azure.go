@@ -45,8 +45,7 @@ type Authorizer struct {
 
 type authzInfo struct {
 	AADEndpoint string
-	MSRbacHost  string
-	Issuer      string
+	ARMEndPoint string
 }
 
 func New(opts Options, authOpts auth.Options) (authz.Interface, error) {
@@ -55,19 +54,17 @@ func New(opts Options, authOpts auth.Options) (authz.Interface, error) {
 		ctx:     context.Background(),
 	}
 
-	authzInfoVal, err := getAuthInfo(authOpts.Environment, authOpts.TenantID, auth.GetMetadata)
+	authzInfoVal, err := getAuthInfo(authOpts.Environment)
 	if err != nil {
 		fmt.Printf("error in getAuthInfo %s", err)
 		return nil, err
 	}
 
-	glog.V(3).Infof("AADEndpoint: %s, rbacHost:%s, issuer url: %v", authzInfoVal.AADEndpoint, authzInfoVal.MSRbacHost, authzInfoVal.Issuer)
-
 	switch opts.AuthzMode {
 	case ARCAuthzMode:
-		c.rbacClient, err = rbac.New(authOpts.ClientID, authOpts.ClientSecret, authOpts.TenantID, authOpts.UseGroupUID, authzInfoVal.AADEndpoint, authzInfoVal.MSRbacHost, ARCAuthzMode, opts.ResourceId)
+		c.rbacClient, err = rbac.New(authOpts.ClientID, authOpts.ClientSecret, authOpts.TenantID, authOpts.UseGroupUID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, ARCAuthzMode, opts.ResourceId)
 	case AKSAuthzMode:
-		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, authOpts.TenantID, authzInfoVal.MSRbacHost, AKSAuthzMode, opts.ResourceId)
+		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, authOpts.TenantID, authzInfoVal.ARMEndPoint, AKSAuthzMode, opts.ResourceId)
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create ms rbac client")
@@ -84,7 +81,7 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 	return s.rbacClient.CheckAccess(request)
 }
 
-func getAuthInfo(environment, tenantID string, getMetadata func(string, string) (*auth.MetadataJSON, error)) (*authzInfo, error) {
+func getAuthInfo(environment) (*authzInfo, error) {
 	var err error
 	env := azure.PublicCloud
 	if environment != "" {
@@ -94,14 +91,8 @@ func getAuthInfo(environment, tenantID string, getMetadata func(string, string) 
 		}
 	}
 
-	metadata, err := getMetadata(env.ActiveDirectoryEndpoint, tenantID)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get metadata for azure")
-	}
-
 	return &authzInfo{
 		AADEndpoint: env.ActiveDirectoryEndpoint,
-		MSRbacHost:  env.ResourceManagerEndpoint,
-		Issuer:      metadata.Issuer,
+		ARMEndPoint: env.ResourceManagerEndpoint,
 	}, nil
 }

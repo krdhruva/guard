@@ -16,7 +16,6 @@ limitations under the License.
 package server
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -96,7 +95,6 @@ func (s Server) getAuthProviderClient(org, commonName string) (auth.Interface, e
 }
 
 func (s Server) Authzhandler(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("Auth request received")
 	if req.TLS == nil || len(req.TLS.PeerCertificates) == 0 {
 		write(w, nil, WithCode(errors.New("Missing client certificate"), http.StatusBadRequest))
 		return
@@ -108,13 +106,11 @@ func (s Server) Authzhandler(w http.ResponseWriter, req *http.Request) {
 	}
 	org := crt.Subject.Organization[0]
 	glog.Infof("Received subject access review request for %s/%s", org, crt.Subject.CommonName)
-	fmt.Printf("Received subject access review request for %s/%s", org, crt.Subject.CommonName)
 
 	data := authzv1.SubjectAccessReview{}
 	err := json.NewDecoder(req.Body).Decode(&data)
 	if err != nil {
 		write(w, nil, WithCode(errors.Wrap(err, "Failed to parse request"), http.StatusBadRequest))
-		fmt.Printf("Failed to parse request. Error code %s%d", err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -126,7 +122,6 @@ func (s Server) Authzhandler(w http.ResponseWriter, req *http.Request) {
 	client, err := s.getAuthzProviderClient(org, crt.Subject.CommonName)
 	if err != nil {
 		write(w, nil, err)
-		fmt.Printf("Error in getting authz clinet %s", err.Error())
 		return
 	}
 
