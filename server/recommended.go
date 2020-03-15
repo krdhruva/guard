@@ -24,7 +24,6 @@ import (
 	"github.com/appscode/guard/auth/providers/ldap"
 	"github.com/appscode/guard/auth/providers/token"
 	authz "github.com/appscode/guard/authz/providers"
-	azureAuthz "github.com/appscode/guard/authz/providers/azure"
 
 	"github.com/spf13/pflag"
 )
