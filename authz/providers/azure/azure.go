@@ -81,7 +81,7 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 	return s.rbacClient.CheckAccess(request)
 }
 
-func getAuthInfo(environment) (*authzInfo, error) {
+func getAuthInfo(environment string) (*authzInfo, error) {
 	var err error
 	env := azure.PublicCloud
 	if environment != "" {
