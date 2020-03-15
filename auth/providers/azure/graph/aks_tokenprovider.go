@@ -60,7 +60,6 @@ func (u *aksTokenProvider) Acquire(token string) (AuthResponse, error) {
 	if err != nil {
 		return authResp, errors.Wrap(err, "failed to create request")
 	}
-
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := u.client.Do(req)
