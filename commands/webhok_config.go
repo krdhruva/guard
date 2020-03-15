@@ -157,8 +157,6 @@ func NewCmdGetWebhookConfig() *cobra.Command {
 				}
 				fmt.Println(string(data))
 			}
-			}
-
 		},
 	}
 
