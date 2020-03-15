@@ -42,7 +42,7 @@ const (
 	expiryDelta = 60 * time.Second
 )
 
-// AccessInfo allows you to get user data from MS Graph
+// AccessInfo allows you to check user access from MS RBAC
 type AccessInfo struct {
 	headers http.Header
 	client  *http.Client
@@ -55,7 +55,7 @@ type AccessInfo struct {
 	azureResourceId string
 }
 
-func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, useGroupUID bool, clsuterType, resourceId string) (*AccessInfo, error) {
+func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, useGroupUID bool, clsuterType, resourceId string) *AccessInfo {
 	u := &AccessInfo{
 		client: http.DefaultClient,
 		headers: http.Header{
@@ -73,10 +73,10 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, useGroup
 		u.clusterType = MANAGED_CLUSTER
 	}
 
-	return u, nil
+	return u
 }
 
-func New(clientID, clientSecret, tenantID string, useGroupUID bool, aadEndpoint, armEndPoint, clusterType, resourceId string) (*AccessInfo, error) {
+func New(clientID, clientSecret, tenantID string, useGroupUID bool, aadEndpoint, armEndPoint, clusterType, resourceId string) *AccessInfo {
 	rbacURL, _ := url.Parse(armEndPoint)
 
 	tokenProvider := graph.NewClientCredentialTokenProvider(clientID, clientSecret,
@@ -86,7 +86,7 @@ func New(clientID, clientSecret, tenantID string, useGroupUID bool, aadEndpoint,
 	return newAccessInfo(tokenProvider, rbacURL, useGroupUID, clusterType, resourceId)
 }
 
-func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string) (*AccessInfo, error) {
+func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string) *AccessInfo {
 	rbacURL, _ := url.Parse(armEndPoint)
 	tokenProvider := graph.NewAKSTokenProvider(tokenURL, tenantID)
 
@@ -157,7 +157,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 
 	resp, err := a.client.Do(req)
 	if err != nil {
-		return nil, errors.Wrap(err, "error getting check access result")
+		return nil, errors.Wrap(err, "error in check access request execution")
 	}
 	defer resp.Body.Close()
 
@@ -174,7 +174,8 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 		}
 
 		if resp.StatusCode >= http.StatusInternalServerError {
-			return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "server error", Denied: false}, nil
+			return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "server error", Denied: false},
+				errors.Errorf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
 		}
 
 	} else {

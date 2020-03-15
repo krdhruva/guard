@@ -38,7 +38,6 @@ type RecommendedOptions struct {
 	Google        google.Options
 	Azure         azure.Options
 	LDAP          ldap.Options
-	AzureAuthz     azureAuthz.Options
 	AuthProvider  providers.AuthProviders
 	AuthzProvider authz.AuthzProviders
 }
@@ -53,7 +52,6 @@ func NewRecommendedOptions() *RecommendedOptions {
 		Token:         token.NewOptions(),
 		Google:        google.NewOptions(),
 		LDAP:          ldap.NewOptions(),
-		AzureAuthz:    azureAuthz.NewOptions(),
 	}
 }
 
@@ -68,7 +66,6 @@ func (o *RecommendedOptions) AddFlags(fs *pflag.FlagSet) {
 	o.Azure.AddFlags(fs)
 	o.LDAP.AddFlags(fs)
 	o.AuthzProvider.AddFlags(fs)
-	o.AzureAuthz.AddFlags(fs)
 }
 
 func (o *RecommendedOptions) Validate() []error {
@@ -95,9 +92,6 @@ func (o *RecommendedOptions) Validate() []error {
 	}
 	if o.AuthProvider.Has(ldap.OrgType) {
 		errs = append(errs, o.LDAP.Validate()...)
-	}
-	if o.AuthzProvider.Has(azureAuthz.OrgType) {
-		errs = append(errs, o.AzureAuthz.Validate(o.Azure)...)
 	}
 
 	return errs

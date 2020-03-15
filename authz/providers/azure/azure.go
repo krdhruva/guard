@@ -37,7 +37,7 @@ func init() {
 }
 
 type Authorizer struct {
-	Options
+	auth.Options
 	rbacClient *rbac.AccessInfo
 }
 
@@ -46,25 +46,21 @@ type authzInfo struct {
 	ARMEndPoint string
 }
 
-func New(opts Options, authOpts auth.Options) (authz.Interface, error) {
+func New(opts auth.Options) (authz.Interface, error) {
 	c := &Authorizer{
 		Options: opts,
 	}
 
 	authzInfoVal, err := getAuthInfo(authOpts.Environment)
 	if err != nil {
-		fmt.Printf("error in getAuthInfo %s", err)
-		return nil, err
+		return nil, errors.Wrap(err, "Error in getAuthInfo %s")
 	}
 
 	switch opts.AuthzMode {
 	case ARCAuthzMode:
-		c.rbacClient, err = rbac.New(authOpts.ClientID, authOpts.ClientSecret, authOpts.TenantID, authOpts.UseGroupUID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, ARCAuthzMode, opts.ResourceId)
+		c.rbacClient = rbac.New(opts.ClientID, opts.ClientSecret, opts.TenantID, opts.UseGroupUID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, ARCAuthzMode, opts.ResourceId)
 	case AKSAuthzMode:
-		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, authOpts.TenantID, authzInfoVal.ARMEndPoint, AKSAuthzMode, opts.ResourceId)
-	}
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create ms rbac client")
+		c.rbacClient = rbac.NewWithAKS(opts.AKSAuthzURL, opts.TenantID, authzInfoVal.ARMEndPoint, AKSAuthzMode, opts.ResourceId)
 	}
 	return c, nil
 }

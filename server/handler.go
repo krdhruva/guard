@@ -132,7 +132,7 @@ func (s Server) Authzhandler(w http.ResponseWriter, req *http.Request) {
 func (s Server) getAuthzProviderClient(org, commonName string) (authz.Interface, error) {
 	switch strings.ToLower(org) {
 	case azureAuthz.OrgType:
-		return azureAuthz.New(s.RecommendedOptions.AzureAuthz, s.RecommendedOptions.Azure)
+		return azureAuthz.New(s.RecommendedOptions.Azure)
 	}
 
 	return nil, errors.Errorf("Client is using unknown organization %s", org)
