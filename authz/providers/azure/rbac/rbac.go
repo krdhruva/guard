@@ -80,15 +80,14 @@ func New(clientID, clientSecret, tenantID string, useGroupUID bool, aadEndpoint,
 	rbacURL, _ := url.Parse(armEndPoint)
 
 	tokenProvider := graph.NewClientCredentialTokenProvider(clientID, clientSecret,
-		aadEndpoint+tenantID+"/oauth2/v2.0/token",
-		armEndPoint+".default")
+		fmt.Sprintf("%s%s/oauth2/v2.0/token", aadEndpoint, tenantID),
+		fmt.Sprintf("%s.default", armEndPoint))
 
 	return newAccessInfo(tokenProvider, rbacURL, useGroupUID, clusterType, resourceId)
 }
 
 func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string) (*AccessInfo, error) {
 	rbacURL, _ := url.Parse(armEndPoint)
-
 	tokenProvider := graph.NewAKSTokenProvider(tokenURL, tenantID)
 
 	return newAccessInfo(tokenProvider, rbacURL, true, clusterType, resourceId)
