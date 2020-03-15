@@ -86,7 +86,7 @@ func New(clientID, clientSecret, tenantID string, useGroupUID bool, aadEndpoint,
 	return newAccessInfo(tokenProvider, rbacURL, useGroupUID, clusterType, resourceId)
 }
 
-func NewWithAKS(tokenURL, tenantID, msrbacHost, clusterType, resourceId string) (*AccessInfo, error) {
+func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string) (*AccessInfo, error) {
 	rbacURL, _ := url.Parse(armEndPoint)
 
 	tokenProvider := graph.NewAKSTokenProvider(tokenURL, tenantID)
