@@ -77,7 +77,7 @@ func write(w http.ResponseWriter, info *auth.UserInfo, err error) {
 func writeAuthzResponse(w http.ResponseWriter, spec *authz.SubjectAccessReviewSpec, accessInfo *authz.SubjectAccessReviewStatus, err error) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("x-content-type-options", "nosniff")
-	code := http.StatusOK
+	code := http.StatusUnauthorized
 
 	resp := authz.SubjectAccessReview{
 		TypeMeta: metav1.TypeMeta{
