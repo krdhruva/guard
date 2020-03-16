@@ -66,7 +66,7 @@ func New(opts auth.Options) (authz.Interface, error) {
 
 func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.SubjectAccessReviewStatus, error) {
 	if request == nil {
-		return nil, errors.Wrap(err, "nil in subject access review")
+		return nil, errors.New("nil in subject access review")
 	}
 
 	// check if user is service account
