@@ -70,7 +70,7 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 	}
 
 	// check if user is service account
-	if strings.Contains((*request).User, "system:serviceaccount") {
+	if strings.Contains((*request).User, "system") {
 		glog.V(3).Infof("returning no op to service accounts")
 		return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "no opinion"}, nil
 	}
