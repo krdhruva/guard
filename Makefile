@@ -99,6 +99,7 @@ all: fmt build
 
 build-%:
 	@$(MAKE) build                        \
+		--no-print-directory              \
 	    GOOS=$(firstword $(subst _, ,$*)) \
 	    GOARCH=$(lastword $(subst _, ,$*))
 
