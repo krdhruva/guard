@@ -15,13 +15,13 @@
 
 SHELL=/bin/bash -o pipefail
 
-GO_PKG   := github.com/krdhruva
+GO_PKG   := github.com/appscode
 REPO     := $(notdir $(shell pwd))
 BIN      := guard
 COMPRESS ?=no
 
 # Where to push the docker image.
-REGISTRY ?= kdreg.azurecr.io
+REGISTRY ?= appscode
 
 # This version-strategy uses git tags to set the version string
 git_branch       := $(shell git rev-parse --abbrev-ref HEAD)

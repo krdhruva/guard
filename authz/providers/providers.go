@@ -21,7 +21,7 @@ import (
 
 	"github.com/appscode/guard/authz"
 	_ "github.com/appscode/guard/authz/providers/azure"
-	
+
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 	apps "k8s.io/api/apps/v1"
@@ -33,14 +33,11 @@ type AuthzProviders struct {
 }
 
 func (a *AuthzProviders) AddFlags(fs *pflag.FlagSet) {
-	fs.StringSliceVar(&a.Providers, "authz-providers", a.Providers, fmt.Sprintf("name of providers for which guard will provide authorization service (required), supported providers : %v", authz.SupportedOrgs.String()))
+	fs.StringSliceVar(&a.Providers, "authz-providers", a.Providers, fmt.Sprintf("name of providers for which guard will provide authorization service, supported providers : %v", authz.SupportedOrgs.String()))
 }
 
 func (a *AuthzProviders) Validate() []error {
 	var errs []error
-	/*if len(a.Providers) == 0 {
-		errs = append(errs, errors.New("authz-providers must be non-empty"))
-	}*/
 
 	for _, p := range a.Providers {
 		if !authz.SupportedOrgs.Has(p) {

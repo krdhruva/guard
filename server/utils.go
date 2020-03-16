@@ -91,6 +91,9 @@ func writeAuthzResponse(w http.ResponseWriter, spec *authz.SubjectAccessReviewSp
 
 	if err != nil {
 		printStackTrace(err)
+		if v, ok := err.(httpStatusCode); ok {
+			code = v.Code()
+		}
 		resp.Status.EvaluationError = err.Error()
 	}
 

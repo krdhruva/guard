@@ -108,6 +108,7 @@ type AuthorizationDecesion struct {
 	TimeToLiveInMs      int                 `json:"timeToLiveInMs"`
 }
 
+// this will be removed once caching is implemented
 func getUserId(userName string) string {
 	switch userName {
 	case "krdhruva@microsoft.com":

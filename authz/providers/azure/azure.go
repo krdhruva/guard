@@ -65,8 +65,12 @@ func New(opts auth.Options) (authz.Interface, error) {
 }
 
 func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.SubjectAccessReviewStatus, error) {
+	if request == nil {
+		return nil, errors.Wrap(err, "nil in subject access review", http.StatusBadRequest)
+	}
+
 	// check if user is service account
-	if strings.Contains((*request).User, "system") {
+	if strings.Contains((*request).User, "system:serviceaccount") {
 		glog.V(3).Infof("returning no op to service accounts")
 		return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "no opinion"}, nil
 	}

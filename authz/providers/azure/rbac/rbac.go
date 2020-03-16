@@ -116,6 +116,7 @@ func (a *AccessInfo) IsTokenExpired() bool {
 }
 
 func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*authzv1.SubjectAccessReviewStatus, error) {
+	var CHECKACCESS_PATH string "/providers/Microsoft.Authorization/checkaccess"
 	var API_VERSION string = "2018-09-01-preview"
 	checkAccessBody := PrepareCheckAccessRequest(request, a.clusterType, a.azureResourceId)
 	checkAccessURL := *a.apiURL
@@ -126,7 +127,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 		checkAccessURL.Path = path.Join(checkAccessURL.Path, str)
 	}
 
-	checkAccessURL.Path = path.Join(checkAccessURL.Path, "/providers/Microsoft.Authorization/checkaccess")
+	checkAccessURL.Path = path.Join(checkAccessURL.Path, CHECKACCESS_PATH)
 	params := url.Values{}
 	params.Add("api-version", API_VERSION)
 	checkAccessURL.RawQuery = params.Encode()
@@ -170,7 +171,8 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 			a.client.CloseIdleConnections()
 			//to-do retry for this
 			// add metrix for this scenario
-			return nil, errors.Errorf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
+			return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "server error", Denied: true}, 
+				errors.Errorf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
 		}
 
 		if resp.StatusCode >= http.StatusInternalServerError {
