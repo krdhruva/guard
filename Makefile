@@ -15,13 +15,13 @@
 
 SHELL=/bin/bash -o pipefail
 
-GO_PKG   := github.com/appscode
+GO_PKG   := github.com/krdhruva
 REPO     := $(notdir $(shell pwd))
 BIN      := guard
 COMPRESS ?=no
 
 # Where to push the docker image.
-REGISTRY ?= appscode
+REGISTRY ?= kdreg.azurecr.io
 
 # This version-strategy uses git tags to set the version string
 git_branch       := $(shell git rev-parse --abbrev-ref HEAD)
@@ -324,7 +324,6 @@ lint: $(BUILD_DIRS)
 	    --env HTTP_PROXY=$(HTTP_PROXY)                          \
 	    --env HTTPS_PROXY=$(HTTPS_PROXY)                        \
 	    --env GO111MODULE=on                                    \
-	    --env GOFLAGS="-mod=vendor"                             \
 	    $(BUILD_IMAGE)                                          \
 	    golangci-lint run --enable $(ADDTL_LINTERS) --deadline=10m --skip-files="generated.*\.go$\" --skip-dirs-use-default --skip-dirs=client,vendor
 
