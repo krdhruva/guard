@@ -99,6 +99,7 @@ all: fmt build
 
 build-%:
 	@$(MAKE) build                        \
+	    --no-print-directory              \
 	    GOOS=$(firstword $(subst _, ,$*)) \
 	    GOARCH=$(lastword $(subst _, ,$*))
 
@@ -323,6 +324,7 @@ lint: $(BUILD_DIRS)
 	    --env HTTP_PROXY=$(HTTP_PROXY)                          \
 	    --env HTTPS_PROXY=$(HTTPS_PROXY)                        \
 	    --env GO111MODULE=on                                    \
+		--env GOFLAGS="-mod=vendor"                             \
 	    $(BUILD_IMAGE)                                          \
 	    golangci-lint run --enable $(ADDTL_LINTERS) --deadline=10m --skip-files="generated.*\.go$\" --skip-dirs-use-default --skip-dirs=client,vendor
 
