@@ -154,7 +154,9 @@ func (s Server) ListenAndServe() {
 		}
 	}))
 
-	m.Post("/subjectaccessreviews", http.HandlerFunc(s.Authzhandler))
+	if s.RecommendedOptions.AuthzProvider != "" {
+		m.Post("/subjectaccessreviews", http.HandlerFunc(s.Authzhandler))
+	}
 	srv := &http.Server{
 		Addr:         s.RecommendedOptions.SecureServing.SecureAddr,
 		ReadTimeout:  5 * time.Second,
