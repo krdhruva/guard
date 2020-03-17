@@ -86,8 +86,14 @@ func writeAuthzResponse(w http.ResponseWriter, spec *authz.SubjectAccessReviewSp
 		},
 	}
 
-	resp.Spec = *spec
-	resp.Status = *accessInfo
+	fmt.Printf("spec: %v, a:%v", spec == nil, accessInfo == nil)
+	if spec != nil {
+		resp.Spec = *spec
+	}
+
+	if accessInfo != nil {
+		resp.Status = *accessInfo
+	}
 
 	if err != nil {
 		printStackTrace(err)
@@ -97,6 +103,7 @@ func writeAuthzResponse(w http.ResponseWriter, spec *authz.SubjectAccessReviewSp
 		resp.Status.EvaluationError = err.Error()
 	}
 
+	fmt.println("here")
 	w.WriteHeader(code)
 	data, _ := json.MarshalIndent(resp, "", "  ")
 	fmt.Printf("final data:%s", string(data))
