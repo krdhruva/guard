@@ -103,7 +103,7 @@ func writeAuthzResponse(w http.ResponseWriter, spec *authz.SubjectAccessReviewSp
 		resp.Status.EvaluationError = err.Error()
 	}
 
-	fmt.println("here")
+	fmt.Printf("here")
 	w.WriteHeader(code)
 	data, _ := json.MarshalIndent(resp, "", "  ")
 	fmt.Printf("final data:%s", string(data))
