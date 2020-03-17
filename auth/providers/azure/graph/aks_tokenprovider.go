@@ -17,6 +17,7 @@ package graph
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -62,6 +63,7 @@ func (u *aksTokenProvider) Acquire(token string) (AuthResponse, error) {
 	}
 	req.Header.Set("Content-Type", "application/json")
 
+	fmt.Printf("token req:%s buf:%s", req, buf)
 	resp, err := u.client.Do(req)
 	if err != nil {
 		return authResp, errors.Wrap(err, "failed to send request")
@@ -71,6 +73,7 @@ func (u *aksTokenProvider) Acquire(token string) (AuthResponse, error) {
 	if resp.StatusCode != http.StatusOK {
 		data, _ := ioutil.ReadAll(resp.Body)
 		return authResp, errors.Errorf("request failed with status code: %d and response: %s", resp.StatusCode, string(data))
+		fmt.Printf("Failed to get token. Error:%s, code:%d", string(data), resp.StatusCode)
 	}
 	err = json.NewDecoder(resp.Body).Decode(&authResp)
 	if err != nil {
