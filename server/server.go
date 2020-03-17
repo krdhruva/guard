@@ -154,7 +154,7 @@ func (s Server) ListenAndServe() {
 		}
 	}))
 
-	if s.RecommendedOptions.AuthzProvider != "" {
+	if len(s.RecommendedOptions.AuthzProvider.providers) > 0 {
 		m.Post("/subjectaccessreviews", http.HandlerFunc(s.Authzhandler))
 	}
 	srv := &http.Server{
