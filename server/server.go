@@ -18,6 +18,7 @@ package server
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	_ "net/http/pprof"
@@ -154,9 +155,8 @@ func (s Server) ListenAndServe() {
 		}
 	}))
 
-	if len(s.RecommendedOptions.AuthzProvider.Providers) > 0 {
-		m.Post("/subjectaccessreviews", http.HandlerFunc(s.Authzhandler))
-	}
+	fmt.Printf("authz options: %s", s.RecommendedOptions.AuthzProvider.Providers)
+	m.Post("/subjectaccessreviews", http.HandlerFunc(s.Authzhandler))
 	srv := &http.Server{
 		Addr:         s.RecommendedOptions.SecureServing.SecureAddr,
 		ReadTimeout:  5 * time.Second,
