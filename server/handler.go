@@ -105,7 +105,7 @@ func (s Server) Authzhandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	org := crt.Subject.Organization[0]
-	glog.Infof("Received subject access review request for %s,%s request:%s", org, crt.Subject.CommonName, req.Body)
+	glog.Infof("Received subject access review request for %s/%s", org, crt.Subject.CommonName)
 
 	data := authzv1.SubjectAccessReview{}
 	err := json.NewDecoder(req.Body).Decode(&data)
@@ -113,6 +113,9 @@ func (s Server) Authzhandler(w http.ResponseWriter, req *http.Request) {
 		write(w, nil, WithCode(errors.Wrap(err, "Failed to parse request"), http.StatusBadRequest))
 		return
 	}
+
+	binaryData, _ := json.MarshalIndent(data, "", "    ")
+	glog.Infof("Subject Access review request:%s", binaryData)
 
 	if !s.RecommendedOptions.AuthzProvider.Has(org) {
 		write(w, nil, WithCode(errors.Errorf("guard does not provide service for %v", org), http.StatusBadRequest))
