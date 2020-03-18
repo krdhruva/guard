@@ -105,7 +105,7 @@ func (s Server) Authzhandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	org := crt.Subject.Organization[0]
-	glog.Infof("Received subject access review request for %s/%s", org, crt.Subject.CommonName)
+	glog.Infof("Received subject access review request for %s,%s request:%s", org, crt.Subject.CommonName, request.Body)
 
 	data := authzv1.SubjectAccessReview{}
 	err := json.NewDecoder(req.Body).Decode(&data)
