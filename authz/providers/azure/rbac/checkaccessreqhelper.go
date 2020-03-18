@@ -211,7 +211,7 @@ func ConvertCheckAccessResponse(body []byte) (*authzv1.SubjectAccessReviewStatus
 	var verdict string
 	err := json.Unmarshal(body, &response)
 
-	binaryData, _ := json.MarshalIndent(checkAccessBody, "", "    ")
+	binaryData, _ := json.MarshalIndent(response, "", "    ")
 	glog.Infof("check access response:%s", binaryData)
 
 	if err != nil {
