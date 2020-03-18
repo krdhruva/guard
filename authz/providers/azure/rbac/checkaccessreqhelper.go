@@ -211,7 +211,9 @@ func ConvertCheckAccessResponse(body []byte) (*authzv1.SubjectAccessReviewStatus
 	var denied bool
 	var verdict string
 	err := json.Unmarshal(body, &response)
-	fmt.Printf("checkaccess response:%s", body)
+	binaryData, _ := json.MarshalIndent(data, "", "    ")
+	fmt.Printf("in convert: %s", data)
+	fmt.Printf("checkaccess response:%s", binaryData)
 	if err != nil {
 		glog.V(10).Infoln("Failed to parse checkacccess response!")
 		fmt.Printf("failed to parse checkaccess response!%s", err.Error())

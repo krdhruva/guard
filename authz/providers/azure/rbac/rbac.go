@@ -101,7 +101,6 @@ func (a *AccessInfo) RefreshToken() error {
 	}
 
 	// Set the authorization headers for future requests
-	fmt.Printf("token: %s", resp.Token)
 	a.headers.Set("Authorization", fmt.Sprintf("Bearer %s", resp.Token))
 	expIn := time.Duration(resp.Expires) * time.Second
 	a.expires = time.Now().Add(expIn - expiryDelta)
