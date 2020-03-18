@@ -86,7 +86,6 @@ func writeAuthzResponse(w http.ResponseWriter, spec *authz.SubjectAccessReviewSp
 		},
 	}
 
-	fmt.Printf("spec: %v, a:%v", spec == nil, accessInfo == nil)
 	if spec != nil {
 		resp.Spec = *spec
 	}
@@ -103,7 +102,6 @@ func writeAuthzResponse(w http.ResponseWriter, spec *authz.SubjectAccessReviewSp
 		resp.Status.EvaluationError = err.Error()
 	}
 
-	fmt.Printf("here")
 	w.WriteHeader(code)
 	data, _ := json.MarshalIndent(resp, "", "  ")
 	fmt.Printf("final data:%s", string(data))

@@ -144,6 +144,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	}
 
 	binaryData, _ := json.MarshalIndent(checkAccessBody, "", "    ")
+	fmt.Printf("checkAccessURI:%s", checkAccessURL.String())
 	fmt.Printf("binary data:%s", binaryData)
 
 	req, err := http.NewRequest(http.MethodPost, checkAccessURL.String(), buf)
@@ -165,9 +166,10 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	defer resp.Body.Close()
 
 	data, _ := ioutil.ReadAll(resp.Body)
-	fmt.Printf("response:%s", data)
+	binaryData, _ = json.MarshalIndent(data, "", "    ")
+	fmt.Printf("checkAccess response:%s", binaryData)
 	if resp.StatusCode != http.StatusOK {
-		fmt.Printf("request failed %s with status code %d and response is %s", req.URL.String(), resp.StatusCode, string(data))
+		glog.Errorf("error in check access response. error code: %d, response: %s", string(binaryData))
 		if resp.StatusCode == http.StatusTooManyRequests {
 			glog.V(10).Infoln("Moving to another ARM instance!")
 			a.client.CloseIdleConnections()

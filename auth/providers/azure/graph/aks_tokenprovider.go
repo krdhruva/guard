@@ -64,23 +64,19 @@ func (u *aksTokenProvider) Acquire(token string) (AuthResponse, error) {
 	req.Header.Set("Content-Type", "application/json")
 
 	binaryData, _ := json.MarshalIndent(buf, "", "    ")
-	fmt.Printf("request url: %s, binary data:%s", u.tokenURL, binaryData)
 
 	resp, err := u.client.Do(req)
 	if err != nil {
-		fmt.Printf("failed to send request: %s", err.Error())
 		return authResp, errors.Wrap(err, "failed to send request")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		data, _ := ioutil.ReadAll(resp.Body)
-		fmt.Printf("Failed to get token. Error:%s, code:%d, error:%s", string(data), resp.StatusCode, err.Error())
 		return authResp, errors.Errorf("request failed with status code: %d and response: %s", resp.StatusCode, string(data))
 	}
 	err = json.NewDecoder(resp.Body).Decode(&authResp)
 	if err != nil {
-		fmt.Printf("failed to decode response: %s", err.Error())
 		return authResp, errors.Wrapf(err, "failed to decode response")
 	}
 
