@@ -156,8 +156,8 @@ func (s Server) ListenAndServe() {
 	}))
 
 	fmt.Printf("authz options: %s", s.RecommendedOptions.AuthzProvider.Providers)
-	if len(s.RecommendedOptions.AuthzProvider.Providers > 0) {
-		fmt.Prinf("inside if to set endpoint")
+	if len(s.RecommendedOptions.AuthzProvider.Providers) > 0 {
+		fmt.Printf("inside if to set endpoint")
 		m.Post("/subjectaccessreviews", http.HandlerFunc(s.Authzhandler))
 	} else {
 		fmt.Printf("skipping setting authz handler")
