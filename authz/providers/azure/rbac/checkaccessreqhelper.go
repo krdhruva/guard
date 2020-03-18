@@ -210,7 +210,7 @@ func ConvertCheckAccessResponse(body []byte) (*authzv1.SubjectAccessReviewStatus
 	var allowed bool
 	var denied bool
 	var verdict string
-	err := json.Unmarshal(body, &response)
+	data, err := json.Unmarshal(body, &response)
 	binaryData, _ := json.MarshalIndent(data, "", "    ")
 	fmt.Printf("in convert: %s", data)
 	fmt.Printf("checkaccess response:%s", binaryData)

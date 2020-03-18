@@ -165,8 +165,6 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	defer resp.Body.Close()
 
 	data, _ := ioutil.ReadAll(resp.Body)
-	binaryData, _ = json.MarshalIndent(data, "", "    ")
-	fmt.Printf("checkAccess response:%s", binaryData)
 	if resp.StatusCode != http.StatusOK {
 		glog.Errorf("error in check access response. error code: %d, response: %s", string(binaryData))
 		if resp.StatusCode == http.StatusTooManyRequests {
