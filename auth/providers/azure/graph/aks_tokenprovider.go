@@ -62,8 +62,6 @@ func (u *aksTokenProvider) Acquire(token string) (AuthResponse, error) {
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	binaryData, _ := json.MarshalIndent(buf, "", "    ")
-
 	resp, err := u.client.Do(req)
 	if err != nil {
 		return authResp, errors.Wrap(err, "failed to send request")
