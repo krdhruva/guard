@@ -17,7 +17,7 @@ package rbac
 
 import (
 	"encoding/json"
-	"string"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/google/uuid"
