@@ -96,10 +96,12 @@ func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string)
 func (a *AccessInfo) RefreshToken() error {
 	resp, err := a.tokenProvider.Acquire("")
 	if err != nil {
+		fmt.Printf("%s failed to refresh token : %s", a.tokenProvider.Name(), err.Error())
 		return errors.Errorf("%s: failed to refresh token: %s", a.tokenProvider.Name(), err)
 	}
 
 	// Set the authorization headers for future requests
+	fmt.Printf("token: %s", resp.Token)
 	a.headers.Set("Authorization", fmt.Sprintf("Bearer %s", resp.Token))
 	expIn := time.Duration(resp.Expires) * time.Second
 	a.expires = time.Now().Add(expIn - expiryDelta)
