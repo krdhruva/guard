@@ -17,7 +17,6 @@ package rbac
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/golang/glog"
 	"github.com/google/uuid"
@@ -212,11 +211,10 @@ func ConvertCheckAccessResponse(body []byte) (*authzv1.SubjectAccessReviewStatus
 	var verdict string
 	err := json.Unmarshal(body, &response)
 
-	fmt.Printf("in convert: %s", body)
+	glog.Infof("in convert: %s", body)
 
 	if err != nil {
-		glog.V(10).Infoln("Failed to parse checkacccess response!")
-		fmt.Printf("failed to parse checkaccess response!%s", err.Error())
+		glog.V(10).Infoln("Failed to parse checkacccess response. Error:%s", err.Error())
 		return nil, errors.Wrap(err, "Error in unmarshalling check access response.")
 	}
 

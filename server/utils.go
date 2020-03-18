@@ -104,7 +104,7 @@ func writeAuthzResponse(w http.ResponseWriter, spec *authz.SubjectAccessReviewSp
 
 	w.WriteHeader(code)
 	data, _ := json.MarshalIndent(resp, "", "  ")
-	fmt.Printf("final data:%s", string(data))
+	glog.Infof("final data:%s", string(data))
 
 	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {

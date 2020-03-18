@@ -96,7 +96,7 @@ func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string)
 func (a *AccessInfo) RefreshToken() error {
 	resp, err := a.tokenProvider.Acquire("")
 	if err != nil {
-		fmt.Printf("%s failed to refresh token : %s", a.tokenProvider.Name(), err.Error())
+		glog.Errorf("%s failed to refresh token : %s", a.tokenProvider.Name(), err.Error())
 		return errors.Errorf("%s: failed to refresh token: %s", a.tokenProvider.Name(), err)
 	}
 
@@ -143,8 +143,8 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	}
 
 	binaryData, _ := json.MarshalIndent(checkAccessBody, "", "    ")
-	fmt.Printf("checkAccessURI:%s", checkAccessURL.String())
-	fmt.Printf("binary data:%s", binaryData)
+	glog.Infof("checkAccessURI:%s", checkAccessURL.String())
+	glog.Infof("binary data:%s", binaryData)
 
 	req, err := http.NewRequest(http.MethodPost, checkAccessURL.String(), buf)
 	if err != nil {
