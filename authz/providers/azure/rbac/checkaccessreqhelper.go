@@ -17,6 +17,7 @@ package rbac
 
 import (
 	"encoding/json"
+	"string"
 
 	"github.com/golang/glog"
 	"github.com/google/uuid"
@@ -210,6 +211,7 @@ func ConvertCheckAccessResponse(body []byte) (*authzv1.SubjectAccessReviewStatus
 	var denied bool
 	var verdict string
 	err := json.Unmarshal(body, &response)
+	var STR_ALLOWED string = "allowed"
 
 	binaryData, _ := json.MarshalIndent(response, "", "    ")
 	glog.Infof("check access response:%s", binaryData)
@@ -219,9 +221,9 @@ func ConvertCheckAccessResponse(body []byte) (*authzv1.SubjectAccessReviewStatus
 		return nil, errors.Wrap(err, "Error in unmarshalling check access response.")
 	}
 
-	if response[0].Decesion == "Allowed" {
+	if strings.ToLower(response[0].Decesion) == STR_ALLOWED {
 		allowed = true
-		verdict = "allowed"
+		verdict = STR_ALLOWED
 	} else {
 		allowed = false
 		denied = true
