@@ -109,7 +109,7 @@ func (o *Options) Validate() []error {
 	}
 
 	if o.AuthzMode != "" && o.ResourceId == "" {
-		errs = append(errs, errors.New("azure.resource-id must be non-empty for authrization"))
+		errs = append(errs, errors.New("azure.resource-id must be non-empty for authorization"))
 	}
 
 	if o.AuthzMode == AKSAuthzMode && o.AKSAuthzURL == "" {
