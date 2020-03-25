@@ -54,6 +54,8 @@ func (s Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	defer req.Body.Close()
+
 	if !s.RecommendedOptions.AuthProvider.Has(org) {
 		write(w, nil, WithCode(errors.Errorf("guard does not provide service for %v", org), http.StatusBadRequest))
 		return
@@ -114,8 +116,7 @@ func (s Server) Authzhandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	binaryData, _ := json.MarshalIndent(data, "", "    ")
-	glog.Infof("Subject Access review request:%s", binaryData)
+	defer req.Body.Close()
 
 	if !s.RecommendedOptions.AuthzProvider.Has(org) {
 		write(w, nil, WithCode(errors.Errorf("guard does not provide service for %v", org), http.StatusBadRequest))

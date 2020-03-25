@@ -33,13 +33,14 @@ import (
 	authzv1 "k8s.io/api/authorization/v1"
 )
 
-var (
-	MANAGED_CLUSTER   = "Microsoft.ContainerService/managedClusters"
-	CONNECTED_CLUSTER = "Microsoft.Kubernetes/connectedClusters"
-)
-
 const (
-	expiryDelta = 60 * time.Second
+	managedClusters         = "Microsoft.ContainerService/managedClusters"
+	connectedClusters       = "Microsoft.Kubernetes/connectedClusters"
+	checkAccessPath         = "/providers/Microsoft.Authorization/checkaccess"
+	checkAccessAPIVersion   = "2018-09-01-preview"
+	remaingSubReadARMHeader = "x-ms-ratelimit-remaining-subscription-reads"
+	remaingARMRequests      = 2000
+	expiryDelta             = 60 * time.Second
 )
 
 // AccessInfo allows you to check user access from MS RBAC
@@ -55,7 +56,7 @@ type AccessInfo struct {
 	azureResourceId string
 }
 
-func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, useGroupUID bool, clsuterType, resourceId string) *AccessInfo {
+func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterType, resourceId string) *AccessInfo {
 	u := &AccessInfo{
 		client: http.DefaultClient,
 		headers: http.Header{
@@ -66,31 +67,31 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, useGroup
 		azureResourceId: resourceId}
 
 	if clsuterType == "arc" {
-		u.clusterType = CONNECTED_CLUSTER
+		u.clusterType = connectedClusters
 	}
 
 	if clsuterType == "aks" {
-		u.clusterType = MANAGED_CLUSTER
+		u.clusterType = managedClusters
 	}
 
 	return u
 }
 
-func New(clientID, clientSecret, tenantID string, useGroupUID bool, aadEndpoint, armEndPoint, clusterType, resourceId string) *AccessInfo {
+func New(clientID, clientSecret, tenantID string, aadEndpoint, armEndPoint, clusterType, resourceId string) *AccessInfo {
 	rbacURL, _ := url.Parse(armEndPoint)
 
 	tokenProvider := graph.NewClientCredentialTokenProvider(clientID, clientSecret,
 		fmt.Sprintf("%s%s/oauth2/v2.0/token", aadEndpoint, tenantID),
 		fmt.Sprintf("%s.default", armEndPoint))
 
-	return newAccessInfo(tokenProvider, rbacURL, useGroupUID, clusterType, resourceId)
+	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId)
 }
 
 func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string) *AccessInfo {
 	rbacURL, _ := url.Parse(armEndPoint)
 	tokenProvider := graph.NewAKSTokenProvider(tokenURL, tenantID)
 
-	return newAccessInfo(tokenProvider, rbacURL, true, clusterType, resourceId)
+	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId)
 }
 
 func (a *AccessInfo) RefreshToken() error {
@@ -117,20 +118,18 @@ func (a *AccessInfo) IsTokenExpired() bool {
 }
 
 func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*authzv1.SubjectAccessReviewStatus, error) {
-	var CHECKACCESS_PATH string = "/providers/Microsoft.Authorization/checkaccess"
-	var API_VERSION string = "2018-09-01-preview"
 	checkAccessBody := PrepareCheckAccessRequest(request, a.clusterType, a.azureResourceId)
 	checkAccessURL := *a.apiURL
 	// Append the path for azure cluster resource id
 	checkAccessURL.Path = path.Join(checkAccessURL.Path, a.azureResourceId)
-	var str string
-	if getNameSpaceScope(request, &str) {
-		checkAccessURL.Path = path.Join(checkAccessURL.Path, str)
+	exist, nameSpaceString := getNameSpaceScope(request)
+	if exist {
+		checkAccessURL.Path = path.Join(checkAccessURL.Path, nameSpaceString)
 	}
 
-	checkAccessURL.Path = path.Join(checkAccessURL.Path, CHECKACCESS_PATH)
+	checkAccessURL.Path = path.Join(checkAccessURL.Path, checkAccessPath)
 	params := url.Values{}
-	params.Add("api-version", API_VERSION)
+	params.Add("api-version", checkAccessAPIVersion)
 	checkAccessURL.RawQuery = params.Encode()
 
 	if a.IsTokenExpired() {
@@ -142,9 +141,11 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 		return nil, errors.Wrap(err, "error encoding check access request")
 	}
 
-	binaryData, _ := json.MarshalIndent(checkAccessBody, "", "    ")
-	glog.Infof("checkAccessURI:%s", checkAccessURL.String())
-	glog.Infof("binary data:%s", binaryData)
+	if glog.V(10) {
+		binaryData, _ := json.MarshalIndent(checkAccessBody, "", "    ")
+		glog.V(10).Infof("checkAccessURI:%s", checkAccessURL.String())
+		glog.V(10).Infof("binary data:%s", binaryData)
+	}
 
 	req, err := http.NewRequest(http.MethodPost, checkAccessURL.String(), buf)
 	if err != nil {
@@ -166,29 +167,25 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 
 	data, _ := ioutil.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		glog.Errorf("error in check access response. error code: %d, response: %s", string(binaryData))
+		glog.Errorf("error in check access response. error code: %d, response: %s", resp.StatusCode, data)
 		if resp.StatusCode == http.StatusTooManyRequests {
 			glog.V(10).Infoln("Moving to another ARM instance!")
 			a.client.CloseIdleConnections()
-			//to-do retry for this
-			// add metrix for this scenario
+			// add prom metrics for this scenario
 			return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "server error", Denied: true},
 				errors.Errorf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
 		}
-
-		if resp.StatusCode >= http.StatusInternalServerError {
-			return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "server error", Denied: false},
-				errors.Errorf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
-		}
-
 	} else {
-		remaining := resp.Header.Get("x-ms-ratelimit-remaining-subscription-reads")
+		remaining := resp.Header.Get(remaingSubReadARMHeader)
 		glog.Infoln("Remaining request count in ARM instance:" + remaining)
 		count, _ := strconv.Atoi(remaining)
-		if count < 2000 {
+		if count < remaingARMRequests {
 			if glog.V(10) {
 				glog.V(10).Infoln("Moving to another ARM instance!")
 			}
+			// Usually ARM connections are cached by destinatio ip and port
+			// By closing the idle connection, a new request will use different port which
+			// will connect to different ARM instance of the region to ensure there is no ARM throttling
 			a.client.CloseIdleConnections()
 		}
 	}

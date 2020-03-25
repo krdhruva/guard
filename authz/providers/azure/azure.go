@@ -57,7 +57,7 @@ func New(opts auth.Options) (authz.Interface, error) {
 
 	switch opts.AuthzMode {
 	case auth.ARCAuthzMode:
-		c.rbacClient = rbac.New(opts.ClientID, opts.ClientSecret, opts.TenantID, opts.UseGroupUID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId)
+		c.rbacClient = rbac.New(opts.ClientID, opts.ClientSecret, opts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId)
 	case auth.AKSAuthzMode:
 		c.rbacClient = rbac.NewWithAKS(opts.AKSAuthzURL, opts.TenantID, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId)
 	}
@@ -70,7 +70,7 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 	}
 
 	// check if user is service account
-	if strings.Contains((*request).User, "system") {
+	if strings.StartsWith(request.User, "system") {
 		glog.V(3).Infof("returning no op to service accounts")
 		return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "no opinion"}, nil
 	}
