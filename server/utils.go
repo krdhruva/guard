@@ -93,7 +93,7 @@ func writeAuthzResponse(w http.ResponseWriter, spec *authz.SubjectAccessReviewSp
 	if accessInfo != nil {
 		resp.Status = *accessInfo
 	} else {
-		accessInfo := authzv1.SubjectAccessReviewStatus{Allowed: false, Denied: true}
+		accessInfo := authz.SubjectAccessReviewStatus{Allowed: false, Denied: true}
 		if err != nil {
 			accessInfo.Reason = err.Error()
 		}
