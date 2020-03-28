@@ -57,16 +57,20 @@ func New(opts auth.Options) (authz.Interface, error) {
 
 	switch opts.AuthzMode {
 	case auth.ARCAuthzMode:
-		c.rbacClient = rbac.New(opts.ClientID, opts.ClientSecret, opts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId)
+		c.rbacClient, err = rbac.New(opts.ClientID, opts.ClientSecret, opts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId)
 	case auth.AKSAuthzMode:
-		c.rbacClient = rbac.NewWithAKS(opts.AKSAuthzURL, opts.TenantID, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId)
+		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, opts.TenantID, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId)
+	}
+
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create ms rbac client")
 	}
 	return c, nil
 }
 
 func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.SubjectAccessReviewStatus, error) {
 	if request == nil {
-		return nil, errors.New("nil in subject access review")
+		return nil, errors.New("subject access review is nil")
 	}
 
 	// check if user is service account

@@ -45,9 +45,9 @@ const (
 
 // AccessInfo allows you to check user access from MS RBAC
 type AccessInfo struct {
-	headers http.Header
-	client  *http.Client
-	expires time.Time
+	headers   http.Header
+	client    *http.Client
+	expiresAt time.Time
 	// These allow us to mock out the URL for testing
 	apiURL *url.URL
 
@@ -74,43 +74,51 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterT
 		u.clusterType = managedClusters
 	}
 
-	return u
+	return u, nil
 }
 
-func New(clientID, clientSecret, tenantID string, aadEndpoint, armEndPoint, clusterType, resourceId string) *AccessInfo {
-	rbacURL, _ := url.Parse(armEndPoint)
+func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType, resourceId string) (*AccessInfo, error) {
+	rbacURL, err := url.Parse(armEndPoint)
+
+	if err != nil {
+		return nil, err
+	}
 
 	tokenProvider := graph.NewClientCredentialTokenProvider(clientID, clientSecret,
 		fmt.Sprintf("%s%s/oauth2/v2.0/token", aadEndpoint, tenantID),
 		fmt.Sprintf("%s.default", armEndPoint))
 
-	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId)
+	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId), nil
 }
 
 func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string) *AccessInfo {
-	rbacURL, _ := url.Parse(armEndPoint)
+	rbacURL, err := url.Parse(armEndPoint)
+
+	if err != nil {
+		return nil, err
+	}
 	tokenProvider := graph.NewAKSTokenProvider(tokenURL, tenantID)
 
-	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId)
+	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId), nil
 }
 
 func (a *AccessInfo) RefreshToken() error {
 	resp, err := a.tokenProvider.Acquire("")
 	if err != nil {
 		glog.Errorf("%s failed to refresh token : %s", a.tokenProvider.Name(), err.Error())
-		return errors.Errorf("%s: failed to refresh token: %s", a.tokenProvider.Name(), err)
+		return errors.Wrap(err, "failed to refresh rbac token")
 	}
 
 	// Set the authorization headers for future requests
 	a.headers.Set("Authorization", fmt.Sprintf("Bearer %s", resp.Token))
 	expIn := time.Duration(resp.Expires) * time.Second
-	a.expires = time.Now().Add(expIn - expiryDelta)
+	a.expiresAt = time.Now().Add(expIn - expiryDelta)
 
 	return nil
 }
 
 func (a *AccessInfo) IsTokenExpired() bool {
-	if a.expires.Before(time.Now()) {
+	if a.expiresAt.Before(time.Now()) {
 		return true
 	} else {
 		return false
@@ -163,21 +171,24 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	if err != nil {
 		return nil, errors.Wrap(err, "error in check access request execution")
 	}
-	defer resp.Body.Close()
 
-	data, _ := ioutil.ReadAll(resp.Body)
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, error.Wrap(err, "error in reading response body")
+	}
+
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		glog.Errorf("error in check access response. error code: %d, response: %s", resp.StatusCode, data)
 		if resp.StatusCode == http.StatusTooManyRequests {
 			glog.V(10).Infoln("Moving to another ARM instance!")
 			a.client.CloseIdleConnections()
 			// add prom metrics for this scenario
-			return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "server error", Denied: true},
-				errors.Errorf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
 		}
+		return nil, errors.Errorf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
 	} else {
 		remaining := resp.Header.Get(remaingSubReadARMHeader)
-		glog.Infoln("Remaining request count in ARM instance:" + remaining)
+		glog.Infof("Remaining request count in ARM instance:%s", remaining)
 		count, _ := strconv.Atoi(remaining)
 		if count < remaingARMRequests {
 			if glog.V(10) {

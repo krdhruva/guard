@@ -212,24 +212,23 @@ func getNameSpaceScope(req *authzv1.SubjectAccessReviewSpec) (bool, string) {
 
 func ConvertCheckAccessResponse(body []byte) (*authzv1.SubjectAccessReviewStatus, error) {
 	var (
-		response []AuthorizationDecision
+		response AuthorizationDecision
 		allowed  bool
 		denied   bool
 		verdict  string
 	)
 	err := json.Unmarshal(body, &response)
+	if err != nil {
+		glog.V(10).Infoln("Failed to parse checkacccess response. Error:%s", err.Error())
+		return nil, errors.Wrap(err, "Error in unmarshalling check access response.")
+	}
 
 	if glog.V(10) {
 		binaryData, _ := json.MarshalIndent(response, "", "    ")
 		glog.Infof("check access response:%s", binaryData)
 	}
 
-	if err != nil {
-		glog.V(10).Infoln("Failed to parse checkacccess response. Error:%s", err.Error())
-		return nil, errors.Wrap(err, "Error in unmarshalling check access response.")
-	}
-
-	if strings.ToLower(response[0].Decision) == accessAllowed {
+	if strings.ToLower(response.Decision) == accessAllowed {
 		allowed = true
 		verdict = accessAllowed
 	} else {

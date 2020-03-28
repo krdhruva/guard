@@ -26,14 +26,6 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
-var DefaultDataDir = func() string {
-	if v, ok := os.LookupEnv("GUARD_DATA_DIR"); ok {
-		glog.Infof("Using data dir %s found in GUARD_DATA_DIR env variable", v)
-		return v
-	}
-	return filepath.Join(homedir.HomeDir(), ".guard")
-}()
-
 type orgs []string
 
 var SupportedOrgs orgs
