@@ -92,19 +92,23 @@ func writeAuthzResponse(w http.ResponseWriter, spec *authz.SubjectAccessReviewSp
 
 	if accessInfo != nil {
 		resp.Status = *accessInfo
+	} else {
+		accessInfo := authzv1.SubjectAccessReviewStatus{Allowed: false, Denied: true}
+		if err != nil {
+			accessInfo.Reason = err.Error()
+		}
+		resp.Status = accessInfo
 	}
 
 	if err != nil {
 		printStackTrace(err)
-		if v, ok := err.(httpStatusCode); ok {
-			code = v.Code()
-		}
-		resp.Status.EvaluationError = err.Error()
 	}
 
 	w.WriteHeader(code)
-	data, _ := json.MarshalIndent(resp, "", "  ")
-	glog.V(10).Infof("final data:%s", string(data))
+	if glog.V(10) {
+		data, _ := json.MarshalIndent(resp, "", "  ")
+		glog.V(10).Infof("final data:%s", string(data))
+	}
 
 	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
