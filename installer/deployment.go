@@ -182,8 +182,7 @@ func newDeployment(opts Options) (objects []runtime.Object, err error) {
 		}
 	}
 
-	if opts.AuthzProvider.Has(azure.OrgType)
-	{
+	if opts.AuthzProvider.Has(azure.OrgType) {
 		if extras, err := opts.AuthzProvider.Apply(d); err != nil {
 			return nil, err
 		} else {

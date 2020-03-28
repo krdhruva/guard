@@ -17,6 +17,7 @@ package rbac
 
 import (
 	"encoding/json"
+	"path"
 	"strings"
 
 	"github.com/golang/glog"
