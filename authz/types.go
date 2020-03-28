@@ -16,14 +16,10 @@ limitations under the License.
 package authz
 
 import (
-	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 
-	"github.com/golang/glog"
 	authzv1 "k8s.io/api/authorization/v1"
-	"k8s.io/client-go/util/homedir"
 )
 
 type orgs []string

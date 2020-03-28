@@ -56,7 +56,7 @@ type AccessInfo struct {
 	azureResourceId string
 }
 
-func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterType, resourceId string) *AccessInfo {
+func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterType, resourceId string) (*AccessInfo, error) {
 	u := &AccessInfo{
 		client: http.DefaultClient,
 		headers: http.Header{
@@ -88,10 +88,10 @@ func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType
 		fmt.Sprintf("%s%s/oauth2/v2.0/token", aadEndpoint, tenantID),
 		fmt.Sprintf("%s.default", armEndPoint))
 
-	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId), nil
+	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId)
 }
 
-func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string) *AccessInfo {
+func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string) (*AccessInfo, error) {
 	rbacURL, err := url.Parse(armEndPoint)
 
 	if err != nil {
@@ -99,7 +99,7 @@ func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string)
 	}
 	tokenProvider := graph.NewAKSTokenProvider(tokenURL, tenantID)
 
-	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId), nil
+	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId)
 }
 
 func (a *AccessInfo) RefreshToken() error {
@@ -174,7 +174,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, error.Wrap(err, "error in reading response body")
+		return nil, errors.Wrap(err, "error in reading response body")
 	}
 
 	defer resp.Body.Close()
