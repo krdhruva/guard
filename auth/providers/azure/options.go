@@ -72,7 +72,7 @@ func (o *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.AuthzMode, "azure.authz-mode", "", "authz mode to call RBAC api, valid value is either aks or arc")
 	fs.StringVar(&o.ResourceId, "azure.resource-id", "", "azure cluster resource id (//subscriptions/<subId>/resourcegroups/<RGname>/providers/Microsoft.ContainerService/managedClusters/<clustername> for AKS or //subscriptions/<subId>/resourcegroups/<RGname>/providers/Microsoft.Kubernetes/connectedClusters/<clustername> for arc) to be used as scope for RBAC check")
 	fs.StringVar(&o.AKSAuthzURL, "azure.aks-authz-url", "", "url to call for AKS Authz flow")
-	fs.Int32Var(&o.ARMCallLimit, "azure.arm-call-limit", 2000, "No of calls before which webhook switch to new ARM instance to avoid throttling")
+	fs.IntVar(&o.ARMCallLimit, "azure.arm-call-limit", 2000, "No of calls before which webhook switch to new ARM instance to avoid throttling")
 }
 
 func (o *Options) Validate() []error {
