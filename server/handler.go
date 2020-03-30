@@ -88,7 +88,7 @@ func (s Server) getAuthProviderClient(org, commonName string) (auth.Interface, e
 	case gitlab.OrgType:
 		return gitlab.New(s.RecommendedOptions.Gitlab), nil
 	case azure.OrgType:
-		return azure.New(s.RecommendedOptions.Azure)
+		return azure.New(s.RecommendedOptions.Azure, s.Store)
 	case ldap.OrgType:
 		return ldap.New(s.RecommendedOptions.LDAP), nil
 	}
@@ -136,7 +136,7 @@ func (s Server) Authzhandler(w http.ResponseWriter, req *http.Request) {
 func (s Server) getAuthzProviderClient(org, commonName string) (authz.Interface, error) {
 	switch strings.ToLower(org) {
 	case azureAuthz.OrgType:
-		return azureAuthz.New(s.RecommendedOptions.Azure)
+		return azureAuthz.New(s.RecommendedOptions.Azure, s.Store)
 	}
 
 	return nil, errors.Errorf("Client is using unknown organization %s", org)

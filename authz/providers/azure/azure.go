@@ -45,7 +45,7 @@ type authzInfo struct {
 	ARMEndPoint string
 }
 
-func New(opts auth.Options) (authz.Interface, error) {
+func New(opts auth.Options, dataStore *authz.Store) (authz.Interface, error) {
 	c := &Authorizer{
 		Options: opts,
 	}
@@ -57,9 +57,9 @@ func New(opts auth.Options) (authz.Interface, error) {
 
 	switch opts.AuthzMode {
 	case auth.ARCAuthzMode:
-		c.rbacClient, err = rbac.New(opts.ClientID, opts.ClientSecret, opts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit)
+		c.rbacClient, err = rbac.New(opts.ClientID, opts.ClientSecret, opts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore)
 	case auth.AKSAuthzMode:
-		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, opts.TenantID, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit)
+		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, opts.TenantID, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore)
 	}
 
 	if err != nil {

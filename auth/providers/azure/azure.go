@@ -74,7 +74,7 @@ type authInfo struct {
 	Issuer      string
 }
 
-func New(opts Options) (auth.Interface, error) {
+func New(opts Options, dataStore *authz.Store) (auth.Interface, error) {
 	c := &Authenticator{
 		Options: opts,
 		ctx:     context.Background(),

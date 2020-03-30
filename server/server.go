@@ -22,12 +22,15 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"path/filepath"
+	"reflect"
 	"time"
 
 	"github.com/appscode/go/ntp"
 	"github.com/appscode/go/signals"
 	v "github.com/appscode/go/version"
 	"github.com/appscode/guard/auth/providers/token"
+	"github.com/appscode/guard/authz"
+	"github.com/appscode/guard/authz/providers/azure/data"
 	"github.com/appscode/pat"
 
 	"github.com/golang/glog"
@@ -41,6 +44,7 @@ import (
 type Server struct {
 	RecommendedOptions *RecommendedOptions
 	TokenAuthenticator *token.Authenticator
+	Store              *authz.Store
 }
 
 func (s *Server) AddFlags(fs *pflag.FlagSet) {
@@ -142,6 +146,7 @@ func (s Server) ListenAndServe() {
 			),
 		),
 	)
+	glog.Infof("Type of auth handler:%s", reflect.TypeOf(handler).String())
 	m.Post("/tokenreviews", handler)
 	m.Get("/metrics", promhttp.Handler())
 	m.Get("/healthz", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -154,8 +159,16 @@ func (s Server) ListenAndServe() {
 		}
 	}))
 
+	glog.Infof("Type of auth handler:%s", reflect.TypeOf(s.Authzhandler).String())
 	if len(s.RecommendedOptions.AuthzProvider.Providers) > 0 {
 		m.Post("/subjectaccessreviews", http.HandlerFunc(s.Authzhandler))
+
+		if s.RecommendedOptions.AuthzProvider.Has(azure.OrgType) {
+			options := data.DefaultOptins
+			s.Store, err := data.NewDataStore(options)
+			if err != nil {
+				glog.Fatalln(err)
+			}	
 	}
 
 	srv := &http.Server{
