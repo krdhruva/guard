@@ -66,6 +66,7 @@ type Authenticator struct {
 	graphClient *graph.UserInfo
 	verifier    *oidc.IDTokenVerifier
 	ctx         context.Context
+	dataStore 	*authz.Store
 }
 
 type authInfo struct {
@@ -78,6 +79,7 @@ func New(opts Options, dataStore *authz.Store) (auth.Interface, error) {
 	c := &Authenticator{
 		Options: opts,
 		ctx:     context.Background(),
+		dataStore: dataStore
 	}
 	authInfoVal, err := getAuthInfo(c.Environment, c.TenantID, getMetadata)
 	if err != nil {
@@ -160,6 +162,17 @@ func (s Authenticator) Check(token string) (*authv1.UserInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if s.dataStore != nil {
+		userName, userObjectId := claims.getUserNameObjectId()
+		glog.V(10).Infof("userName: %s, objectId:%s", userName, userObjectId)
+		if username != "" && userObjectId != "" {
+			// in case of no eviction, oldest entry will be evicted if cache is full
+			s.dataStore.Set(username, userObjectId)
+		}
+
+	}
+
 	if s.Options.ResolveGroupMembershipOnlyOnOverageClaim {
 		groups, skipGraphAPI, err := getGroupsAndCheckOverage(claims)
 		if err != nil {
@@ -267,6 +280,16 @@ func getClaims(token *oidc.IDToken) (claims, error) {
 		return nil, fmt.Errorf("error unmarshalling claims: %s", err)
 	}
 	return c, nil
+}
+
+func (c claims) getUserNameObjectId() (string, string) {
+	var (
+		userName string
+		userObjectId string
+	)
+	userName, _ = c.string(azureUsernameClaim)
+	userObjectId, _ = c.string(azureObjectIDClaim)
+	return userName, userObjectId
 }
 
 // ReviewFromClaims creates a new TokenReview object from the claims object
