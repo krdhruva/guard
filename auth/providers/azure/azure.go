@@ -23,7 +23,9 @@ import (
 	"net/http"
 
 	"github.com/appscode/guard/auth"
+	"github.com/appscode/guard/authz"
 	"github.com/appscode/guard/auth/providers/azure/graph"
+	azureAuthz "github.com/appscode/guard/authz/providers/azure"
 
 	"github.com/Azure/go-autorest/autorest/azure"
 	oidc "github.com/coreos/go-oidc"
@@ -66,7 +68,7 @@ type Authenticator struct {
 	graphClient *graph.UserInfo
 	verifier    *oidc.IDTokenVerifier
 	ctx         context.Context
-	dataStore 	*authz.Store
+	dataStore 	*azureAuthz.DataStore
 }
 
 type authInfo struct {
@@ -75,11 +77,11 @@ type authInfo struct {
 	Issuer      string
 }
 
-func New(opts Options, dataStore *authz.Store) (auth.Interface, error) {
+func New(opts Options, dataStore *azureAuthz.DataStore) (auth.Interface, error) {
 	c := &Authenticator{
 		Options: opts,
 		ctx:     context.Background(),
-		dataStore: dataStore
+		dataStore: dataStore,
 	}
 	authInfoVal, err := getAuthInfo(c.Environment, c.TenantID, getMetadata)
 	if err != nil {
@@ -166,9 +168,9 @@ func (s Authenticator) Check(token string) (*authv1.UserInfo, error) {
 	if s.dataStore != nil {
 		userName, userObjectId := claims.getUserNameObjectId()
 		glog.V(10).Infof("userName: %s, objectId:%s", userName, userObjectId)
-		if username != "" && userObjectId != "" {
+		if userName != "" && userObjectId != "" {
 			// in case of no eviction, oldest entry will be evicted if cache is full
-			s.dataStore.Set(username, userObjectId)
+			s.dataStore.Set(userName, userObjectId)
 		}
 
 	}

@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/appscode/guard/auth/providers/azure/graph"
+	"github.com/asspcode/guard/authz/providers/azure"
 	"github.com/appscode/guard/authz"
 	"github.com/golang/glog"
 	"github.com/moul/http2curl"
@@ -55,10 +56,10 @@ type AccessInfo struct {
 	clusterType     string
 	azureResourceId string
 	armCallLimit    int
-	dataStore       *authz.Store
+	dataStore       *azure.DataStore
 }
 
-func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterType, resourceId string, armCallLimit int) (*AccessInfo, error) {
+func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterType, resourceId string, armCallLimit int, dataStore *azure.DataStore) (*AccessInfo, error) {
 	u := &AccessInfo{
 		client: http.DefaultClient,
 		headers: http.Header{
@@ -81,7 +82,7 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterT
 	return u, nil
 }
 
-func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore *authz.Store) (*AccessInfo, error) {
+func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore *azure.DataStore) (*AccessInfo, error) {
 	rbacURL, err := url.Parse(armEndPoint)
 
 	if err != nil {
@@ -133,7 +134,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	checkAccessBody := PrepareCheckAccessRequest(request, a.clusterType, a.azureResourceId)
 
 	var useroid string
-	found, err := dataStore.Get(request.User, useroid)
+	found, err := a.dataStore.Get(request.User, useroid)
 	if !found || err != nil {
 		return nil, errors.Wrap(err, "user does not exist in cache")
 	}

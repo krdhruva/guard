@@ -45,7 +45,7 @@ type authzInfo struct {
 	ARMEndPoint string
 }
 
-func New(opts auth.Options, dataStore *authz.Store) (authz.Interface, error) {
+func New(opts auth.Options, dataStore *DataStore) (authz.Interface, error) {
 	c := &Authorizer{
 		Options: opts,
 	}
