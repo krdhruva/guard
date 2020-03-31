@@ -172,7 +172,10 @@ func (s Server) ListenAndServe() {
 				glog.V(10).Infof("Error in cache. %v %s", store==nil, err.Error())
 				glog.Fatalln(err)
 				panic(err)
+			} else {
+				glog.V(10).Infoln("cache instantiated")
 			}
+
 			s.Store = store
 		}
 	}

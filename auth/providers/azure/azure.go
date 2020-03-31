@@ -172,6 +172,8 @@ func (s Authenticator) Check(token string) (*authv1.UserInfo, error) {
 			s.dataStore.Set(userName, userObjectId)
 		}
 
+	} else {
+		glog.V(10).Infoln("cache is nil, skipping adding user details to cache")
 	}
 
 	if s.Options.ResolveGroupMembershipOnlyOnOverageClaim {
