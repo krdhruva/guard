@@ -176,6 +176,9 @@ func (s Authenticator) Check(token string) (*authv1.UserInfo, error) {
 		glog.V(10).Infoln("cache is nil, skipping adding user details to cache")
 	}
 
+	userName, userObjectId := claims.getUserNameObjectId()
+        glog.V(10).Infof("userName: %s, objectId:%s", userName, userObjectId)
+
 	if s.Options.ResolveGroupMembershipOnlyOnOverageClaim {
 		groups, skipGraphAPI, err := getGroupsAndCheckOverage(claims)
 		if err != nil {
