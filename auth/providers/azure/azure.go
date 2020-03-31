@@ -23,9 +23,8 @@ import (
 	"net/http"
 
 	"github.com/appscode/guard/auth"
-	"github.com/appscode/guard/authz"
 	"github.com/appscode/guard/auth/providers/azure/graph"
-	azureAuthz "github.com/appscode/guard/authz/providers/azure"
+	"github.com/appscode/guard/authz/providers/azure/data"
 
 	"github.com/Azure/go-autorest/autorest/azure"
 	oidc "github.com/coreos/go-oidc"
@@ -68,7 +67,7 @@ type Authenticator struct {
 	graphClient *graph.UserInfo
 	verifier    *oidc.IDTokenVerifier
 	ctx         context.Context
-	dataStore 	*azureAuthz.DataStore
+	dataStore 	*data.DataStore
 }
 
 type authInfo struct {
@@ -77,7 +76,7 @@ type authInfo struct {
 	Issuer      string
 }
 
-func New(opts Options, dataStore *azureAuthz.DataStore) (auth.Interface, error) {
+func New(opts Options, dataStore *data.DataStore) (auth.Interface, error) {
 	c := &Authenticator{
 		Options: opts,
 		ctx:     context.Background(),

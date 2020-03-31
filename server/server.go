@@ -29,8 +29,8 @@ import (
 	"github.com/appscode/go/signals"
 	v "github.com/appscode/go/version"
 	"github.com/appscode/guard/auth/providers/token"
-	"github.com/appscode/guard/authz"
 	"github.com/appscode/guard/authz/providers/azure"
+	"github.com/appscode/guard/authz/providers/azure/data"
 	"github.com/appscode/pat"
 
 	"github.com/golang/glog"
@@ -44,7 +44,7 @@ import (
 type Server struct {
 	RecommendedOptions *RecommendedOptions
 	TokenAuthenticator *token.Authenticator
-	Store              *azure.Store
+	Store              *data.DataStore
 }
 
 func (s *Server) AddFlags(fs *pflag.FlagSet) {
@@ -164,11 +164,15 @@ func (s Server) ListenAndServe() {
 		m.Post("/subjectaccessreviews", http.HandlerFunc(s.Authzhandler))
 
 		if s.RecommendedOptions.AuthzProvider.Has(azure.OrgType) {
-			options := azure.DefaultOptins
-			s.Store, err := azure.NewDataStore(options)
+			var err error
+			var store data.DataStore
+			options := data.DefaultOptions
+			store, err = data.NewDataStore(options)
 			if err != nil {
 				glog.Fatalln(err)
-			}	
+			}
+			s.Store = &store
+		}
 	}
 
 	srv := &http.Server{

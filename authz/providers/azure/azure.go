@@ -21,6 +21,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure"
 	auth "github.com/appscode/guard/auth/providers/azure"
 	"github.com/appscode/guard/authz"
+	"github.com/appscode/guard/authz/providers/azure/data"
 	"github.com/appscode/guard/authz/providers/azure/rbac"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -45,7 +46,7 @@ type authzInfo struct {
 	ARMEndPoint string
 }
 
-func New(opts auth.Options, dataStore *DataStore) (authz.Interface, error) {
+func New(opts auth.Options, dataStore *data.DataStore) (authz.Interface, error) {
 	c := &Authorizer{
 		Options: opts,
 	}
