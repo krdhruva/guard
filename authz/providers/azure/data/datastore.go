@@ -147,7 +147,7 @@ func NewDataStore(options Options) (*DataStore, error) {
 		OnRemoveWithReason: nil,
 	}
 	cache, err := bigcache.NewBigCache(config)
-	if err != nil {
+	if err != nil || cache == nil {
 		return nil, err
 	}
 	result.cache = cache
