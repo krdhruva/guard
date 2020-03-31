@@ -165,13 +165,18 @@ func (s Server) ListenAndServe() {
 
 		if s.RecommendedOptions.AuthzProvider.Has(azure.OrgType) {
 			var err error
-			var store data.DataStore
+			var store *data.DataStore
 			options := data.DefaultOptions
 			store, err = data.NewDataStore(options)
-			if err != nil {
+			if store == nil || err != nil {
+				glog.V(10).Infof("Error in cache. %v %s", store==nil, err.Error())
 				glog.Fatalln(err)
+				panic(err)
+			} else {
+				glog.V(10).Infoln("cache instantiated")
 			}
-			s.Store = &store
+
+			s.Store = store
 		}
 	}
 
