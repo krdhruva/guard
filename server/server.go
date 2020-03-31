@@ -168,8 +168,10 @@ func (s Server) ListenAndServe() {
 			var store *data.DataStore
 			options := data.DefaultOptions
 			store, err = data.NewDataStore(options)
-			if err != nil {
+			if store == nil || err != nil {
+				glog.V(10).Infof("Error in cache. %v %s", store==nil, err.Error())
 				glog.Fatalln(err)
+				panic(err)
 			}
 			s.Store = store
 		}
