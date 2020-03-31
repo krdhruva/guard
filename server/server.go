@@ -172,6 +172,13 @@ func (s Server) ListenAndServe() {
 				panic(err)
 			} else {
 				glog.V(10).Infoln("cache instantiated")
+				err := s.Store.Set("hi","hello")
+				if err != nil {
+					glog.V(10).Infof("error in cache %s",err.Error())
+				}
+				var data string
+				found, _ := s.Store.Get("hi",data)
+				glog.V(10).Infof("found %v, data in cache %s", found, data)
 
 			}
 		}
