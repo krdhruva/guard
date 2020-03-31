@@ -88,6 +88,7 @@ func (s Server) getAuthProviderClient(org, commonName string) (auth.Interface, e
 	case gitlab.OrgType:
 		return gitlab.New(s.RecommendedOptions.Gitlab), nil
 	case azure.OrgType:
+		glog.V(10).Infof("store is %v", s.Store == nil)
 		return azure.New(s.RecommendedOptions.Azure, s.Store)
 	case ldap.OrgType:
 		return ldap.New(s.RecommendedOptions.LDAP), nil
@@ -136,6 +137,7 @@ func (s Server) Authzhandler(w http.ResponseWriter, req *http.Request) {
 func (s Server) getAuthzProviderClient(org, commonName string) (authz.Interface, error) {
 	switch strings.ToLower(org) {
 	case azureAuthz.OrgType:
+		glog.V(10).Infof("cache is %v", s.Store == nil)
 		return azureAuthz.New(s.RecommendedOptions.Azure, s.Store)
 	}
 
