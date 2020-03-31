@@ -8,6 +8,7 @@ require (
 	github.com/appscode/guard/authz v0.0.0-00010101000000-000000000000
 	github.com/appscode/guard/authz/providers v0.0.0-00010101000000-000000000000
 	github.com/appscode/guard/authz/providers/azure v0.0.0-00010101000000-000000000000
+	github.com/appscode/guard/authz/providers/azure/data v0.0.0-00010101000000-000000000000
 	github.com/appscode/pat v0.0.0-20170521084856-48ff78925b79
 	github.com/aws/aws-sdk-go v1.20.20
 	github.com/coreos/go-oidc v2.1.0+incompatible

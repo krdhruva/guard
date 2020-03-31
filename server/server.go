@@ -165,13 +165,13 @@ func (s Server) ListenAndServe() {
 
 		if s.RecommendedOptions.AuthzProvider.Has(azure.OrgType) {
 			var err error
-			var store data.DataStore
+			var store *data.DataStore
 			options := data.DefaultOptions
 			store, err = data.NewDataStore(options)
 			if err != nil {
 				glog.Fatalln(err)
 			}
-			s.Store = &store
+			s.Store = store
 		}
 	}
 

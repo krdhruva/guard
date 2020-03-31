@@ -107,14 +107,14 @@ var DefaultOptions = Options{
 }
 
 // NewStore creates a BigCache store.
-func NewDataStore(options Options) (DataStore, error) {
+func NewDataStore(options Options) (*DataStore, error) {
 	result := DataStore{}
 	config := bigcache.DefaultConfig(options.Eviction)
 	config.HardMaxCacheSize = options.HardMaxCacheSize
 	cache, err := bigcache.NewBigCache(config)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 	result.cache = cache
-	return result, nil
+	return &result, nil
 }
