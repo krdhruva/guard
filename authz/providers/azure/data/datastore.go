@@ -108,7 +108,6 @@ var DefaultOptions = Options{
 
 // NewStore creates a BigCache store.
 func NewDataStore(options Options) (*DataStore, error) {
-	result := DataStore{}
 	config := bigcache.Config {
 		// number of shards (must be a power of 2)
 		Shards: 1024,
@@ -150,6 +149,6 @@ func NewDataStore(options Options) (*DataStore, error) {
 	if err != nil || cache == nil {
 		return nil, err
 	}
-	result.cache = cache
-	return &result, nil
+	return &DataStore {
+		cache: cache }, nil
 }
