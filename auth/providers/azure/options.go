@@ -50,6 +50,7 @@ type Options struct {
 	AuthzMode                                string
 	ResourceId                               string
 	AKSAuthzURL                              string
+	ARMCallLimit				 int
 }
 
 func NewOptions() Options {
@@ -117,6 +118,10 @@ func (o *Options) Validate() []error {
 		errs = append(errs, errors.New("azure.aks-authz-url must be non-empty"))
 	}
 
+	if o.AuthzMode != AKSAuthzMode && o.AKSAuthzURL != "" {
+		errs = append(errs, errors.New("azure.aks-authz-url must be set only with AKS authz mode"))
+	}
+
 	if o.AuthzMode == ARCAuthzMode {
 		if o.ClientSecret == "" {
 			errs = append(errs, errors.New("azure.client-secret must be non-empty"))
@@ -125,6 +130,11 @@ func (o *Options) Validate() []error {
 			errs = append(errs, errors.New("azure.client-id must be non-empty"))
 		}
 	}
+
+	if o.ARMCallLimit > 4000 {
+		errs = append(errs, errors.New("azure.arm-call-limit must not be more than 4000"))
+	}
+
 	return errs
 }
 
@@ -217,6 +227,7 @@ func (o Options) Apply(d *apps.Deployment) (extraObjs []runtime.Object, err erro
 		args = append(args, fmt.Sprintf("--azure.aks-authz-url=%s", o.AKSAuthzURL))
 	}
 
+	args = append(args, fmt.Sprintf("--azure.arm-call-limit=%d", o.ARMCallLimit))
 	container.Args = args
 	d.Spec.Template.Spec.Containers[0] = container
 
