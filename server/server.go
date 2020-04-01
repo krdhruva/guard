@@ -142,7 +142,7 @@ func (s Server) ListenAndServe() {
 	handler := promhttp.InstrumentHandlerInFlight(inFlightGauge,
 		promhttp.InstrumentHandlerDuration(duration.MustCurryWith(prometheus.Labels{"handler": "tokenreviews"}),
 			promhttp.InstrumentHandlerCounter(counter,
-				promhttp.InstrumentHandlerResponseSize(responseSize.MustCurryWith(prometheus.Labels{"handler": "tokenreviews"}), s),
+				promhttp.InstrumentHandlerResponseSize(responseSize.MustCurryWith(prometheus.Labels{"handler": "tokenreviews"}),&s),
 			),
 		),
 	)
@@ -170,19 +170,6 @@ func (s Server) ListenAndServe() {
 				glog.V(10).Infof("Error in cache. %v %s", s.Store==nil, err.Error())
 				glog.Fatalln(err)
 				panic(err)
-			} else {
-				glog.V(10).Infoln("cache instantiated")
-				err := s.Store.Set("hi","hello")
-				if err != nil {
-					glog.V(10).Infof("error in cache %s",err.Error())
-				}
-				var data string
-				found, err1 := s.Store.Get("hi",data)
-				if err1 != nil {
-					glog.V(10).Infof("error in cache get %s",err1.Error())
-				}
-				glog.V(10).Infof("found %v, data in cache %s", found, data)
-
 			}
 		}
 	}

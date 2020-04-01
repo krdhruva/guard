@@ -133,7 +133,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	checkAccessBody := PrepareCheckAccessRequest(request, a.clusterType, a.azureResourceId)
 
 	var useroid string
-	found, err := a.dataStore.Get(request.User, useroid)
+	found, err := a.dataStore.Get(request.User, &useroid)
 	if !found || err != nil {
 		return nil, errors.Wrap(err, "user does not exist in cache")
 	}

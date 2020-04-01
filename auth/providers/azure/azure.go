@@ -170,14 +170,15 @@ func (s Authenticator) Check(token string) (*authv1.UserInfo, error) {
 		if userName != "" && userObjectId != "" {
 			// in case of no eviction, oldest entry will be evicted if cache is full
 			s.dataStore.Set(userName, userObjectId)
+		} else if userName == "" && userObjectId != "" {
+			// this might be B2B scenario. Need to check whether we need to add objectId
+			// If webhook receives it in user filed of SubjectAccessReview
+			// same can be direclty used
+                        s.dataStore.Set(userObjectId, userObjectId)
 		}
-
 	} else {
 		glog.V(10).Infoln("cache is nil, skipping adding user details to cache")
 	}
-
-	userName, userObjectId := claims.getUserNameObjectId()
-        glog.V(10).Infof("userName: %s, objectId:%s", userName, userObjectId)
 
 	if s.Options.ResolveGroupMembershipOnlyOnOverageClaim {
 		groups, skipGraphAPI, err := getGroupsAndCheckOverage(claims)

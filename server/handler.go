@@ -34,7 +34,7 @@ import (
 	authzv1 "k8s.io/api/authorization/v1"
 )
 
-func (s Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if req.TLS == nil || len(req.TLS.PeerCertificates) == 0 {
 		write(w, nil, WithCode(errors.New("Missing client certificate"), http.StatusBadRequest))
 		return
@@ -79,7 +79,7 @@ func (s Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	write(w, resp, err)
 }
 
-func (s Server) getAuthProviderClient(org, commonName string) (auth.Interface, error) {
+func (s *Server) getAuthProviderClient(org, commonName string) (auth.Interface, error) {
 	switch strings.ToLower(org) {
 	case github.OrgType:
 		return github.New(s.RecommendedOptions.Github, commonName), nil
@@ -88,7 +88,6 @@ func (s Server) getAuthProviderClient(org, commonName string) (auth.Interface, e
 	case gitlab.OrgType:
 		return gitlab.New(s.RecommendedOptions.Gitlab), nil
 	case azure.OrgType:
-		glog.V(10).Infof("store is %v", s.Store == nil)
 		return azure.New(s.RecommendedOptions.Azure, s.Store)
 	case ldap.OrgType:
 		return ldap.New(s.RecommendedOptions.LDAP), nil
@@ -97,7 +96,7 @@ func (s Server) getAuthProviderClient(org, commonName string) (auth.Interface, e
 	return nil, errors.Errorf("Client is using unknown organization %s", org)
 }
 
-func (s Server) Authzhandler(w http.ResponseWriter, req *http.Request) {
+func (s *Server) Authzhandler(w http.ResponseWriter, req *http.Request) {
 	if req.TLS == nil || len(req.TLS.PeerCertificates) == 0 {
 		writeAuthzResponse(w, nil, nil, WithCode(errors.New("Missing client certificate"), http.StatusBadRequest))
 		return
@@ -134,10 +133,9 @@ func (s Server) Authzhandler(w http.ResponseWriter, req *http.Request) {
 	writeAuthzResponse(w, &data.Spec, resp, err)
 }
 
-func (s Server) getAuthzProviderClient(org, commonName string) (authz.Interface, error) {
+func (s *Server) getAuthzProviderClient(org, commonName string) (authz.Interface, error) {
 	switch strings.ToLower(org) {
 	case azureAuthz.OrgType:
-		glog.V(10).Infof("cache is %v", s.Store == nil)
 		return azureAuthz.New(s.RecommendedOptions.Azure, s.Store)
 	}
 
