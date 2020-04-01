@@ -40,6 +40,7 @@ const (
 	checkAccessPath         = "/providers/Microsoft.Authorization/checkaccess"
 	checkAccessAPIVersion   = "2018-09-01-preview"
 	remaingSubReadARMHeader = "x-ms-ratelimit-remaining-subscription-reads"
+	remaingARMRequests      = 2000
 	expiryDelta             = 60 * time.Second
 )
 
@@ -54,11 +55,17 @@ type AccessInfo struct {
 	tokenProvider   graph.TokenProvider
 	clusterType     string
 	azureResourceId string
+<<<<<<< HEAD
 	armCallLimit    int
 	dataStore       *data.DataStore
 }
 
 func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterType, resourceId string, armCallLimit int, dataStore *data.DataStore) (*AccessInfo, error) {
+=======
+}
+
+func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterType, resourceId string) (*AccessInfo, error) {
+>>>>>>> parent of 48d0a03... making arm throttling limit configurable
 	u := &AccessInfo{
 		client: http.DefaultClient,
 		headers: http.Header{
@@ -66,9 +73,13 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterT
 		},
 		apiURL:          rbacURL,
 		tokenProvider:   tokenProvider,
+<<<<<<< HEAD
 		azureResourceId: resourceId,
 		armCallLimit:    armCallLimit,
 		dataStore:       dataStore}
+=======
+		azureResourceId: resourceId}
+>>>>>>> parent of 48d0a03... making arm throttling limit configurable
 
 	if clsuterType == "arc" {
 		u.clusterType = connectedClusters
@@ -81,7 +92,11 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterT
 	return u, nil
 }
 
+<<<<<<< HEAD
 func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore *data.DataStore) (*AccessInfo, error) {
+=======
+func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType, resourceId string) (*AccessInfo, error) {
+>>>>>>> parent of 48d0a03... making arm throttling limit configurable
 	rbacURL, err := url.Parse(armEndPoint)
 
 	if err != nil {
@@ -92,10 +107,17 @@ func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType
 		fmt.Sprintf("%s%s/oauth2/v2.0/token", aadEndpoint, tenantID),
 		fmt.Sprintf("%s.default", armEndPoint))
 
+<<<<<<< HEAD
 	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore)
 }
 
 func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore *data.DataStore) (*AccessInfo, error) {
+=======
+	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId)
+}
+
+func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string) (*AccessInfo, error) {
+>>>>>>> parent of 48d0a03... making arm throttling limit configurable
 	rbacURL, err := url.Parse(armEndPoint)
 
 	if err != nil {
@@ -103,7 +125,7 @@ func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string,
 	}
 	tokenProvider := graph.NewAKSTokenProvider(tokenURL, tenantID)
 
-	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore)
+	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId)
 }
 
 func (a *AccessInfo) RefreshToken() error {
@@ -190,7 +212,6 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	}
 
 	defer resp.Body.Close()
-	glog.V(10).Infof("Configured ARM instance: %d", a.armCallLimit)
 	if resp.StatusCode != http.StatusOK {
 		glog.Errorf("error in check access response. error code: %d, response: %s", resp.StatusCode, data)
 		if resp.StatusCode == http.StatusTooManyRequests {
@@ -203,7 +224,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 		remaining := resp.Header.Get(remaingSubReadARMHeader)
 		glog.Infof("Remaining request count in ARM instance:%s", remaining)
 		count, _ := strconv.Atoi(remaining)
-		if count < a.armCallLimit {
+		if count < remaingARMRequests {
 			if glog.V(10) {
 				glog.V(10).Infoln("Moving to another ARM instance!")
 			}
