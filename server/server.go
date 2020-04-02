@@ -18,6 +18,7 @@ package server
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	_ "net/http/pprof"
@@ -52,6 +53,8 @@ func (s *Server) AddFlags(fs *pflag.FlagSet) {
 }
 
 func (s Server) ListenAndServe() {
+
+	fmt.Println("KD: testing logger format")
 	if errs := s.RecommendedOptions.Validate(); errs != nil {
 		glog.Fatal(errs)
 	}
