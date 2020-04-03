@@ -22,7 +22,6 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"path/filepath"
-	"reflect"
 	"time"
 
 	"github.com/appscode/go/ntp"
@@ -42,33 +41,39 @@ import (
 )
 
 type Server struct {
-	RecommendedOptions *RecommendedOptions
-	TokenAuthenticator *token.Authenticator
-	Store              *data.DataStore
+	AuthRecommendedOptions  *AuthRecommendedOptions
+	AuthzRecommendedOptions *AuthzRecommendedOptions
+	TokenAuthenticator      *token.Authenticator
+	Store                   *data.DataStore
 }
 
 func (s *Server) AddFlags(fs *pflag.FlagSet) {
-	s.RecommendedOptions.AddFlags(fs)
+	s.AuthRecommendedOptions.AddFlags(fs)
+	s.AuthzRecommendedOptions.AddFlags(fs)
 }
 
 func (s Server) ListenAndServe() {
-	if errs := s.RecommendedOptions.Validate(); errs != nil {
+	if errs := s.AuthRecommendedOptions.Validate(); errs != nil {
 		glog.Fatal(errs)
 	}
 
-	if s.RecommendedOptions.NTP.Enabled() {
-		ticker := time.NewTicker(s.RecommendedOptions.NTP.Interval)
+	if errs := s.AuthzRecommendedOptions.Validate(s.AuthRecommendedOptions); errs != nil {
+		glog.Fatal(errs)
+	}
+
+	if s.AuthRecommendedOptions.NTP.Enabled() {
+		ticker := time.NewTicker(s.AuthRecommendedOptions.NTP.Interval)
 		go func() {
 			for range ticker.C {
-				if err := ntp.CheckSkewFromServer(s.RecommendedOptions.NTP.NTPServer, s.RecommendedOptions.NTP.MaxClodkSkew); err != nil {
+				if err := ntp.CheckSkewFromServer(s.AuthRecommendedOptions.NTP.NTPServer, s.AuthRecommendedOptions.NTP.MaxClodkSkew); err != nil {
 					glog.Fatal(err)
 				}
 			}
 		}()
 	}
 
-	if s.RecommendedOptions.Token.AuthFile != "" {
-		s.TokenAuthenticator = token.New(s.RecommendedOptions.Token)
+	if s.AuthRecommendedOptions.Token.AuthFile != "" {
+		s.TokenAuthenticator = token.New(s.AuthRecommendedOptions.Token)
 
 		err := s.TokenAuthenticator.Configure()
 		if err != nil {
@@ -76,7 +81,7 @@ func (s Server) ListenAndServe() {
 		}
 		if meta.PossiblyInCluster() {
 			w := fsnotify.Watcher{
-				WatchDir: filepath.Dir(s.RecommendedOptions.Token.AuthFile),
+				WatchDir: filepath.Dir(s.AuthRecommendedOptions.Token.AuthFile),
 				Reload: func() error {
 					return s.TokenAuthenticator.Configure()
 				},
@@ -90,10 +95,10 @@ func (s Server) ListenAndServe() {
 	}
 
 	// loading file read related data
-	if err := s.RecommendedOptions.LDAP.Configure(); err != nil {
+	if err := s.AuthRecommendedOptions.LDAP.Configure(); err != nil {
 		glog.Fatal(err)
 	}
-	if err := s.RecommendedOptions.Google.Configure(); err != nil {
+	if err := s.AuthRecommendedOptions.Google.Configure(); err != nil {
 		glog.Fatal(err)
 	}
 
@@ -104,7 +109,7 @@ func (s Server) ListenAndServe() {
 		 - http://www.bite-code.com/2015/06/25/tls-mutual-auth-in-golang/
 		 - http://www.hydrogen18.com/blog/your-own-pki-tls-golang.html
 	*/
-	caCert, err := ioutil.ReadFile(s.RecommendedOptions.SecureServing.CACertFile)
+	caCert, err := ioutil.ReadFile(s.AuthRecommendedOptions.SecureServing.CACertFile)
 	if err != nil {
 		glog.Fatal(err)
 	}
@@ -142,11 +147,11 @@ func (s Server) ListenAndServe() {
 	handler := promhttp.InstrumentHandlerInFlight(inFlightGauge,
 		promhttp.InstrumentHandlerDuration(duration.MustCurryWith(prometheus.Labels{"handler": "tokenreviews"}),
 			promhttp.InstrumentHandlerCounter(counter,
-				promhttp.InstrumentHandlerResponseSize(responseSize.MustCurryWith(prometheus.Labels{"handler": "tokenreviews"}),&s),
+				promhttp.InstrumentHandlerResponseSize(responseSize.MustCurryWith(prometheus.Labels{"handler": "tokenreviews"}), &s),
 			),
 		),
 	)
-	glog.Infof("Type of auth handler:%s", reflect.TypeOf(handler).String())
+
 	m.Post("/tokenreviews", handler)
 	m.Get("/metrics", promhttp.Handler())
 	m.Get("/healthz", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -159,27 +164,38 @@ func (s Server) ListenAndServe() {
 		}
 	}))
 
-	glog.Infof("Type of auth handler:%s", reflect.TypeOf(s.Authzhandler).String())
-	if len(s.RecommendedOptions.AuthzProvider.Providers) > 0 {
-		m.Post("/subjectaccessreviews", http.HandlerFunc(s.Authzhandler))
+	if len(s.AuthRecommendedOptions.AuthzProvider.Providers) > 0 {
+		authzhandler := Authzhandler{
+			AuthRecommendedOptions:  s.AuthRecommendedOptions,
+			AuthzRecommendedOptions: s.AuthzRecommendedOptions}
+		authzPromHandler := promhttp.InstrumentHandlerInFlight(inFlightGauge,
+			promhttp.InstrumentHandlerDuration(duration.MustCurryWith(prometheus.Labels{"handler": "subjectaccessreviews"}),
+				promhttp.InstrumentHandlerCounter(counter,
+					promhttp.InstrumentHandlerResponseSize(responseSize.MustCurryWith(prometheus.Labels{"handler": "subjectaccessreview"}), &authzhandler),
+				),
+			),
+		)
 
-		if s.RecommendedOptions.AuthzProvider.Has(azure.OrgType) {
+		m.Post("/subjectaccessreviews", authzPromHandler)
+
+		if s.AuthRecommendedOptions.AuthzProvider.Has(azure.OrgType) {
 			options := data.DefaultOptions
-			s.Store, err = data.NewDataStore(options)
-			if s.Store == nil || err != nil {
-				glog.V(10).Infof("Error in cache. %v %s", s.Store==nil, err.Error())
+			authzhandler.Store, err = data.NewDataStore(options)
+			if authzhandler.Store == nil || err != nil {
+				glog.V(10).Infof("Error in cache. %v %s", authzhandler.Store == nil, err.Error())
 				glog.Fatalln(err)
 				panic(err)
 			}
+			s.Store = authzhandler.Store
 		}
 	}
 
 	srv := &http.Server{
-		Addr:         s.RecommendedOptions.SecureServing.SecureAddr,
+		Addr:         s.AuthRecommendedOptions.SecureServing.SecureAddr,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		Handler:      m,
 		TLSConfig:    tlsConfig,
 	}
-	glog.Fatalln(srv.ListenAndServeTLS(s.RecommendedOptions.SecureServing.CertFile, s.RecommendedOptions.SecureServing.KeyFile))
+	glog.Fatalln(srv.ListenAndServeTLS(s.AuthRecommendedOptions.SecureServing.CertFile, s.AuthRecommendedOptions.SecureServing.KeyFile))
 }

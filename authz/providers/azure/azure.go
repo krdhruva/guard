@@ -37,7 +37,6 @@ func init() {
 }
 
 type Authorizer struct {
-	auth.Options
 	rbacClient *rbac.AccessInfo
 }
 
@@ -46,21 +45,19 @@ type authzInfo struct {
 	ARMEndPoint string
 }
 
-func New(opts auth.Options, dataStore *data.DataStore) (authz.Interface, error) {
-	c := &Authorizer{
-		Options: opts,
-	}
+func New(opts Options, authopts auth.Options, dataStore *data.DataStore) (authz.Interface, error) {
+	c := &Authorizer{}
 
-	authzInfoVal, err := getAuthInfo(opts.Environment)
+	authzInfoVal, err := getAuthInfo(authopts.Environment)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error in getAuthInfo %s")
 	}
 
 	switch opts.AuthzMode {
 	case auth.ARCAuthzMode:
-		c.rbacClient, err = rbac.New(opts.ClientID, opts.ClientSecret, opts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore)
+		c.rbacClient, err = rbac.New(authopts.ClientID, authopts.ClientSecret, authopts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore)
 	case auth.AKSAuthzMode:
-		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, opts.TenantID, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore)
+		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, authopts.TenantID, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore)
 	}
 
 	if err != nil {

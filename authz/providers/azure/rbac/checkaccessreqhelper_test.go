@@ -49,7 +49,7 @@ func Test_getScope(t *testing.T) {
 	}
 }
 
-func Test_getSecGroups(t *testing.T) {
+func Test_getValidSecurityGroups(t *testing.T) {
 	type args struct {
 		groups []string
 	}
@@ -67,8 +67,8 @@ func Test_getSecGroups(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getSecGroups(tt.args.groups); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getSecGroups() = %v, want %v", got, tt.want)
+			if got := getValidSecurityGroups(tt.args.groups); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getValidSecurityGroups() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -115,28 +115,25 @@ func Test_getDataAction(t *testing.T) {
 
 func Test_getNameSpaceScope(t *testing.T) {
 	req := authzv1.SubjectAccessReviewSpec{ResourceAttributes: nil}
-	str := ""
 	want := false
-	got := getNameSpaceScope(&req, &str)
-	if got {
+	got, str := getNameSpaceScope(&req)
+	if got || str != "" {
 		t.Errorf("Want:%v, got:%v", want, got)
 	}
 
 	req = authzv1.SubjectAccessReviewSpec{
 		ResourceAttributes: &authzv1.ResourceAttributes{Namespace: ""}}
-	str = ""
 	want = false
-	got = getNameSpaceScope(&req, &str)
-	if got {
+	got, str = getNameSpaceScope(&req)
+	if got || str != "" {
 		t.Errorf("Want:%v, got:%v", want, got)
 	}
 
 	req = authzv1.SubjectAccessReviewSpec{
 		ResourceAttributes: &authzv1.ResourceAttributes{Namespace: "dev"}}
-	str = ""
 	outputstring := "/namespace/dev"
 	want = true
-	got = getNameSpaceScope(&req, &str)
+	got, str = getNameSpaceScope(&req)
 	if !got || str != outputstring {
 		t.Errorf("Want:%v - %s, got: %v - %s", want, outputstring, got, str)
 	}

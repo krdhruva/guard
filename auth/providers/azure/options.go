@@ -50,7 +50,6 @@ type Options struct {
 	AuthzMode                                string
 	ResourceId                               string
 	AKSAuthzURL                              string
-	ARMCallLimit                             int
 }
 
 func NewOptions() Options {
@@ -72,7 +71,6 @@ func (o *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.AuthzMode, "azure.authz-mode", "", "authz mode to call RBAC api, valid value is either aks or arc")
 	fs.StringVar(&o.ResourceId, "azure.resource-id", "", "azure cluster resource id (//subscriptions/<subId>/resourcegroups/<RGname>/providers/Microsoft.ContainerService/managedClusters/<clustername> for AKS or //subscriptions/<subId>/resourcegroups/<RGname>/providers/Microsoft.Kubernetes/connectedClusters/<clustername> for arc) to be used as scope for RBAC check")
 	fs.StringVar(&o.AKSAuthzURL, "azure.aks-authz-url", "", "url to call for AKS Authz flow")
-	fs.IntVar(&o.ARMCallLimit, "azure.arm-call-limit", 2000, "No of calls before which webhook switch to new ARM instance to avoid throttling")
 }
 
 func (o *Options) Validate() []error {
@@ -99,40 +97,6 @@ func (o *Options) Validate() []error {
 	}
 	if o.TenantID == "" {
 		errs = append(errs, errors.New("azure.tenant-id must be non-empty"))
-	}
-
-	o.AuthzMode = strings.ToLower(o.AuthzMode)
-	switch o.AuthzMode {
-	case AKSAuthzMode:
-	case ARCAuthzMode:
-	case "":
-	default:
-		errs = append(errs, errors.New("invalid azure.authz-mode. valid value is either aks or arc"))
-	}
-
-	if o.AuthzMode != "" && o.ResourceId == "" {
-		errs = append(errs, errors.New("azure.resource-id must be non-empty for authorization"))
-	}
-
-	if o.AuthzMode == AKSAuthzMode && o.AKSAuthzURL == "" {
-		errs = append(errs, errors.New("azure.aks-authz-url must be non-empty"))
-	}
-
-	if o.AuthzMode != AKSAuthzMode && o.AKSAuthzURL != "" {
-		errs = append(errs, errors.New("azure.aks-authz-url must be set only with AKS authz mode"))
-	}
-
-	if o.AuthzMode == ARCAuthzMode {
-		if o.ClientSecret == "" {
-			errs = append(errs, errors.New("azure.client-secret must be non-empty"))
-		}
-		if o.ClientID == "" {
-			errs = append(errs, errors.New("azure.client-id must be non-empty"))
-		}
-	}
-
-	if o.ARMCallLimit > 4000 {
-		errs = append(errs, errors.New("azure.arm-call-limit must not be more than 4000"))
 	}
 	return errs
 }
@@ -213,19 +177,6 @@ func (o Options) Apply(d *apps.Deployment) (extraObjs []runtime.Object, err erro
 	args = append(args, fmt.Sprintf("--azure.use-group-uid=%t", o.UseGroupUID))
 
 	args = append(args, fmt.Sprintf("--azure.graph-call-on-overage-claim=%t", o.ResolveGroupMembershipOnlyOnOverageClaim))
-
-	switch o.AuthzMode {
-	case AKSAuthzMode:
-		fallthrough
-	case ARCAuthzMode:
-		args = append(args, fmt.Sprintf("--azure.authz-mode=%s", o.AuthzMode))
-		args = append(args, fmt.Sprintf("--azure.resource-id=%s", o.ResourceId))
-		args = append(args, fmt.Sprintf("--azure.arm-call-limit=%d", o.ARMCallLimit))
-	}
-
-	if o.AKSAuthzURL != "" {
-		args = append(args, fmt.Sprintf("--azure.aks-authz-url=%s", o.AKSAuthzURL))
-	}
 
 	container.Args = args
 	d.Spec.Template.Spec.Containers[0] = container
