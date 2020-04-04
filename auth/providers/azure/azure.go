@@ -67,7 +67,7 @@ type Authenticator struct {
 	graphClient *graph.UserInfo
 	verifier    *oidc.IDTokenVerifier
 	ctx         context.Context
-	dataStore 	*data.DataStore
+	dataStore   *data.DataStore
 }
 
 type authInfo struct {
@@ -78,8 +78,8 @@ type authInfo struct {
 
 func New(opts Options, dataStore *data.DataStore) (auth.Interface, error) {
 	c := &Authenticator{
-		Options: opts,
-		ctx:     context.Background(),
+		Options:   opts,
+		ctx:       context.Background(),
 		dataStore: dataStore,
 	}
 	authInfoVal, err := getAuthInfo(c.Environment, c.TenantID, getMetadata)
@@ -174,7 +174,7 @@ func (s Authenticator) Check(token string) (*authv1.UserInfo, error) {
 			// this might be B2B scenario. Need to check whether we need to add objectId
 			// If webhook receives it in user filed of SubjectAccessReview
 			// same can be direclty used
-                        s.dataStore.Set(userObjectId, userObjectId)
+			s.dataStore.Set(userObjectId, userObjectId)
 		}
 	} else {
 		glog.V(10).Infoln("cache is nil, skipping adding user details to cache")
@@ -291,7 +291,7 @@ func getClaims(token *oidc.IDToken) (claims, error) {
 
 func (c claims) getUserNameObjectId() (string, string) {
 	var (
-		userName string
+		userName     string
 		userObjectId string
 	)
 	userName, _ = c.string(azureUsernameClaim)
@@ -303,6 +303,7 @@ func (c claims) getUserNameObjectId() (string, string) {
 // the claims object
 func (c claims) getUserInfo(usernameClaim, userObjectIDClaim string) (*authv1.UserInfo, error) {
 	username, err := c.string(usernameClaim)
+	userobid, err := c.string(userObjectIDClaim)
 	if err != nil && err == ErrClaimNotFound {
 		username, err = c.string(userObjectIDClaim)
 	}
@@ -313,7 +314,7 @@ func (c claims) getUserInfo(usernameClaim, userObjectIDClaim string) (*authv1.Us
 		return nil, errors.Wrap(err, "unable to get username claim")
 	}
 
-	return &authv1.UserInfo{Username: username}, nil
+	return &authv1.UserInfo{Username: username, Extra: {"oid", userobid}}, nil
 }
 
 // String gets a string value from claims given a key. Returns error if

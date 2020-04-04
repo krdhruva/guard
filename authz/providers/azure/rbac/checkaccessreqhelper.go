@@ -115,18 +115,6 @@ type AuthorizationDecision struct {
 	TimeToLiveInMs      int                 `json:"timeToLiveInMs"`
 }
 
-// this will be removed once caching is implemented
-func getUserId(userName string) string {
-	switch userName {
-	case "krdhruva@microsoft.com":
-		return "63e8a863-9ae9-4f3c-b0b7-fd9df05c712e"
-	case "test@KDOrg.onmicrosoft.com":
-		return "62103f2e-051d-48cc-af47-b1ff3deec630"
-	default:
-		return "62103f2e-051d-48cc-af47-b1ff3deec630"
-	}
-}
-
 func getScope(resourceId string, attr *authzv1.ResourceAttributes) string {
 	if attr != nil && attr.Namespace != "" {
 		return path.Join(resourceId + namespaces + attr.Namespace)
@@ -150,6 +138,14 @@ func getValidSecurityGroups(groups []string) []string {
 }
 
 func getActionName(verb string) string {
+	/* special verbs
+	use verb on podsecuritypolicies resources in the policy API group
+	bind and escalate verbs on roles and clusterroles resources in the rbac.authorization.k8s.io API group
+	impersonate verb on users, groups, and serviceaccounts in the core API group
+	userextras in the authentication.k8s.io API group
+
+	https://kubernetes.io/docs/reference/access-authn-authz/authorization/#determine-the-request-verb
+	*/
 	switch verb {
 	case "get":
 		fallthrough
@@ -157,11 +153,26 @@ func getActionName(verb string) string {
 		fallthrough
 	case "watch":
 		return "read"
+
+	case "bind":
+		fallthrough
+	case "escalate":
+		fallthrough
+	case "impersonate":
+		fallthrough
+
 	case "create":
-		return "action"
+		fallthrough //instead of action create will be mapped to write
+	case "post":
+		fallthrough //same for post. As of now 'action' data action is not required on resources
+	case "patch":
+		fallthrough
 	case "update":
 		return "write"
+
 	case "delete":
+		fallthrough
+	case "deletecollection": // TODO: verify scenario
 		return "delete"
 	default:
 		return ""
@@ -186,12 +197,8 @@ func getDataAction(subRevReq *authzv1.SubjectAccessReviewSpec, clusterType strin
 
 func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType, resourceId string) *CheckAccessRequest {
 	checkaccessreq := CheckAccessRequest{}
-	checkaccessreq.Subject.Attributes.ObjectId = getUserId(req.User)
-
-	if len(req.Groups) > 0 {
-		groups := getValidSecurityGroups(req.Groups)
-		checkaccessreq.Subject.Attributes.Groups = groups
-	}
+	groups := getValidSecurityGroups(req.Groups)
+	checkaccessreq.Subject.Attributes.Groups = groups
 
 	action := make([]AuthorizationActionInfo, 1)
 	action[0] = getDataAction(req, clusterType)

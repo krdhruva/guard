@@ -54,6 +54,10 @@ func (s *Authzhandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	defer req.Body.Close()
+	if glog.V(10) {
+		authzReqData, _ := json.MarshalIndent(req, "", "    ")
+		glog.V(10).Infof("Authz req: %s", authzReqData)
+	}
 
 	if !s.AuthzRecommendedOptions.AuthzProvider.Has(org) {
 		writeAuthzResponse(w, &data.Spec, nil, WithCode(errors.Errorf("guard does not provide service for %v", org), http.StatusBadRequest))
