@@ -56,7 +56,7 @@ type AccessInfo struct {
 	armCallLimit    int
 }
 
-func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterType, resourceId string, armCallLimit int (*AccessInfo, error) {
+func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterType, resourceId string, armCallLimit int) (*AccessInfo, error) {
 	u := &AccessInfo{
 		client: http.DefaultClient,
 		headers: http.Header{
@@ -130,7 +130,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	checkAccessBody := PrepareCheckAccessRequest(request, a.clusterType, a.azureResourceId)
 
 	oid := request.Extra["oid"].String()
-	userOid = oid[1:len(oid)-1]
+	userOid := oid[1:len(oid)-1]
 	checkAccessBody.Subject.Attributes.ObjectId = userOid
 	checkAccessURL := *a.apiURL
 	// Append the path for azure cluster resource id
