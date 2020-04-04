@@ -28,8 +28,6 @@ import (
 	"github.com/appscode/go/signals"
 	v "github.com/appscode/go/version"
 	"github.com/appscode/guard/auth/providers/token"
-	"github.com/appscode/guard/authz/providers/azure"
-	"github.com/appscode/guard/authz/providers/azure/data"
 	"github.com/appscode/pat"
 
 	"github.com/golang/glog"
@@ -44,7 +42,6 @@ type Server struct {
 	AuthRecommendedOptions  *AuthRecommendedOptions
 	AuthzRecommendedOptions *AuthzRecommendedOptions
 	TokenAuthenticator      *token.Authenticator
-	Store                   *data.DataStore
 }
 
 func (s *Server) AddFlags(fs *pflag.FlagSet) {
@@ -177,15 +174,6 @@ func (s Server) ListenAndServe() {
 		)
 
 		m.Post("/subjectaccessreviews", authzPromHandler)
-
-		if s.AuthzRecommendedOptions.AuthzProvider.Has(azure.OrgType) {
-			options := data.DefaultOptions
-			authzhandler.Store, err = data.NewDataStore(options)
-			if authzhandler.Store == nil || err != nil {
-				glog.Fatalf("Error in initalizing cache. Error:%s", err.Error())
-			}
-			s.Store = authzhandler.Store
-		}
 	}
 
 	srv := &http.Server{

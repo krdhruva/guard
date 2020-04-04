@@ -48,10 +48,3 @@ func (o orgs) String() string {
 type Interface interface {
 	Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.SubjectAccessReviewStatus, error)
 }
-
-type Store interface {
-	Set(key string, value interface{}) error
-	Get(key string, value interface{}) (bool, error)
-	Delete(key string) error
-	Close() error
-}

@@ -21,7 +21,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure"
 	auth "github.com/appscode/guard/auth/providers/azure"
 	"github.com/appscode/guard/authz"
-	"github.com/appscode/guard/authz/providers/azure/data"
 	"github.com/appscode/guard/authz/providers/azure/rbac"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -45,7 +44,7 @@ type authzInfo struct {
 	ARMEndPoint string
 }
 
-func New(opts Options, authopts auth.Options, dataStore *data.DataStore) (authz.Interface, error) {
+func New(opts Options, authopts auth.Options) (authz.Interface, error) {
 	c := &Authorizer{}
 
 	authzInfoVal, err := getAuthInfo(authopts.Environment)
@@ -55,9 +54,9 @@ func New(opts Options, authopts auth.Options, dataStore *data.DataStore) (authz.
 
 	switch opts.AuthzMode {
 	case auth.ARCAuthzMode:
-		c.rbacClient, err = rbac.New(authopts.ClientID, authopts.ClientSecret, authopts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore)
+		c.rbacClient, err = rbac.New(authopts.ClientID, authopts.ClientSecret, authopts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit)
 	case auth.AKSAuthzMode:
-		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, authopts.TenantID, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore)
+		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, authopts.TenantID, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit)
 	}
 
 	if err != nil {

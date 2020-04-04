@@ -85,7 +85,7 @@ func (s *Server) getAuthProviderClient(org, commonName string) (auth.Interface, 
 	case gitlab.OrgType:
 		return gitlab.New(s.AuthRecommendedOptions.Gitlab), nil
 	case azure.OrgType:
-		return azure.New(s.AuthRecommendedOptions.Azure, s.Store)
+		return azure.New(s.AuthRecommendedOptions.Azure)
 	case ldap.OrgType:
 		return ldap.New(s.AuthRecommendedOptions.LDAP), nil
 	}

@@ -27,7 +27,6 @@ import (
 	"time"
 
 	"github.com/appscode/guard/auth/providers/azure/graph"
-	"github.com/appscode/guard/authz/providers/azure/data"
 	"github.com/golang/glog"
 	"github.com/moul/http2curl"
 	"github.com/pkg/errors"
@@ -55,10 +54,9 @@ type AccessInfo struct {
 	clusterType     string
 	azureResourceId string
 	armCallLimit    int
-	dataStore       *data.DataStore
 }
 
-func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterType, resourceId string, armCallLimit int, dataStore *data.DataStore) (*AccessInfo, error) {
+func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterType, resourceId string, armCallLimit int (*AccessInfo, error) {
 	u := &AccessInfo{
 		client: http.DefaultClient,
 		headers: http.Header{
@@ -67,8 +65,7 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterT
 		apiURL:          rbacURL,
 		tokenProvider:   tokenProvider,
 		azureResourceId: resourceId,
-		armCallLimit:    armCallLimit,
-		dataStore:       dataStore}
+		armCallLimit:    armCallLimit }
 
 	if clsuterType == "arc" {
 		u.clusterType = connectedClusters
@@ -81,7 +78,7 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterT
 	return u, nil
 }
 
-func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore *data.DataStore) (*AccessInfo, error) {
+func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType, resourceId string, armCallLimit int) (*AccessInfo, error) {
 	rbacURL, err := url.Parse(armEndPoint)
 
 	if err != nil {
@@ -92,10 +89,10 @@ func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType
 		fmt.Sprintf("%s%s/oauth2/v2.0/token", aadEndpoint, tenantID),
 		fmt.Sprintf("%s.default", armEndPoint))
 
-	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore)
+	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit)
 }
 
-func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore *data.DataStore) (*AccessInfo, error) {
+func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string, armCallLimit int) (*AccessInfo, error) {
 	rbacURL, err := url.Parse(armEndPoint)
 
 	if err != nil {
@@ -103,7 +100,7 @@ func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string,
 	}
 	tokenProvider := graph.NewAKSTokenProvider(tokenURL, tenantID)
 
-	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore)
+	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit)
 }
 
 func (a *AccessInfo) RefreshToken() error {
@@ -132,14 +129,9 @@ func (a *AccessInfo) IsTokenExpired() bool {
 func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*authzv1.SubjectAccessReviewStatus, error) {
 	checkAccessBody := PrepareCheckAccessRequest(request, a.clusterType, a.azureResourceId)
 
-	var useroid string
-	found, err := a.dataStore.Get(request.User, &useroid)
-	if !found || err != nil {
-		return nil, errors.Wrap(err, "user does not exist in cache")
-	}
-
-	checkAccessBody.Subject.Attributes.ObjectId = (request.Extra["oid"]).String()
-	glog.V(10).Infof("checkAccess cache user %s", useroid)
+	oid := request.Extra["oid"].String()
+	userOid = oid[1:len(oid)-1]
+	checkAccessBody.Subject.Attributes.ObjectId = userOid
 	checkAccessURL := *a.apiURL
 	// Append the path for azure cluster resource id
 	checkAccessURL.Path = path.Join(checkAccessURL.Path, a.azureResourceId)
