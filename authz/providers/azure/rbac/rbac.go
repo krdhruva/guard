@@ -137,7 +137,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	if !found || err != nil {
 		return nil, errors.Wrap(err, "user does not exist in cache")
 	}
-	checkaccessreq.Subject.Attributes.ObjectId = useroid
+	checkAccessBody.Subject.Attributes.ObjectId = useroid
 	glog.V(10).Infof("checkAccess cache user %s", useroid)
 	checkAccessURL := *a.apiURL
 	// Append the path for azure cluster resource id

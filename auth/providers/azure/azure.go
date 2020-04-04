@@ -314,7 +314,9 @@ func (c claims) getUserInfo(usernameClaim, userObjectIDClaim string) (*authv1.Us
 		return nil, errors.Wrap(err, "unable to get username claim")
 	}
 
-	return &authv1.UserInfo{Username: username, Extra: {"oid", userobid}}, nil
+	return &authv1.UserInfo{
+		Username: username, 
+		Extra: map[string] authv1.ExtraValue {"oid": { userobid }}}, nil
 }
 
 // String gets a string value from claims given a key. Returns error if
