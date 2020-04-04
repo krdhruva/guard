@@ -23,7 +23,6 @@ import (
 	"github.com/appscode/guard/auth/providers/google"
 	"github.com/appscode/guard/auth/providers/ldap"
 	"github.com/appscode/guard/auth/providers/token"
-	authz "github.com/appscode/guard/authz/providers"
 
 	"github.com/spf13/pflag"
 )
@@ -38,7 +37,6 @@ type AuthRecommendedOptions struct {
 	Azure         azure.Options
 	LDAP          ldap.Options
 	AuthProvider  providers.AuthProviders
-	AuthzProvider authz.AuthzProviders
 }
 
 func NewAuthRecommendedOptions() *AuthRecommendedOptions {

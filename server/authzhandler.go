@@ -55,7 +55,7 @@ func (s *Authzhandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	defer req.Body.Close()
 
-	if !s.AuthRecommendedOptions.AuthzProvider.Has(org) {
+	if !s.AuthzRecommendedOptions.AuthzProvider.Has(org) {
 		writeAuthzResponse(w, &data.Spec, nil, WithCode(errors.Errorf("guard does not provide service for %v", org), http.StatusBadRequest))
 		return
 	}

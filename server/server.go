@@ -164,13 +164,13 @@ func (s Server) ListenAndServe() {
 		}
 	}))
 
-	if len(s.AuthRecommendedOptions.AuthzProvider.Providers) > 0 {
+	if len(s.AuthzRecommendedOptions.AuthzProvider.Providers) > 0 {
 		authzhandler := Authzhandler{
 			AuthRecommendedOptions:  s.AuthRecommendedOptions,
 			AuthzRecommendedOptions: s.AuthzRecommendedOptions}
-		authzPromHandler := promhttp.InstrumentHandlerInFlight(inFlightGauge,
+		authzPromHandler := promhttp.InstrumentHandlerInFlight(inFlightGaugeAuthz,
 			promhttp.InstrumentHandlerDuration(duration.MustCurryWith(prometheus.Labels{"handler": "subjectaccessreviews"}),
-				promhttp.InstrumentHandlerCounter(counter,
+				promhttp.InstrumentHandlerCounter(counterAuthz,
 					promhttp.InstrumentHandlerResponseSize(responseSize.MustCurryWith(prometheus.Labels{"handler": "subjectaccessreview"}), &authzhandler),
 				),
 			),
@@ -178,7 +178,7 @@ func (s Server) ListenAndServe() {
 
 		m.Post("/subjectaccessreviews", authzPromHandler)
 
-		if s.AuthRecommendedOptions.AuthzProvider.Has(azure.OrgType) {
+		if s.AuthzRecommendedOptions.AuthzProvider.Has(azure.OrgType) {
 			options := data.DefaultOptions
 			authzhandler.Store, err = data.NewDataStore(options)
 			if authzhandler.Store == nil || err != nil {
