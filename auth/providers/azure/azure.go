@@ -303,7 +303,6 @@ func (c claims) getUserNameObjectId() (string, string) {
 // the claims object
 func (c claims) getUserInfo(usernameClaim, userObjectIDClaim string) (*authv1.UserInfo, error) {
 	username, err := c.string(usernameClaim)
-	userobid, err := c.string(userObjectIDClaim)
 	if err != nil && err == ErrClaimNotFound {
 		username, err = c.string(userObjectIDClaim)
 	}
@@ -314,9 +313,11 @@ func (c claims) getUserInfo(usernameClaim, userObjectIDClaim string) (*authv1.Us
 		return nil, errors.Wrap(err, "unable to get username claim")
 	}
 
+	useroid, _ := c.string(userObjectIDClaim)
+
 	return &authv1.UserInfo{
-		Username: username, 
-		Extra: map[string] authv1.ExtraValue {"oid": { userobid }}}, nil
+		Username: username,
+		Extra:    map[string]authv1.ExtraValue{"oid": {useroid}}}, nil
 }
 
 // String gets a string value from claims given a key. Returns error if
