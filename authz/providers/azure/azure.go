@@ -75,6 +75,10 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 		glog.V(3).Infof("returning no op to service accounts")
 		return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "no opinion"}, nil
 	}
+
+	if s.rbacClient.IsTokenExpired() {
+		s.rbacClient.RefreshToken()
+	}
 	return s.rbacClient.CheckAccess(request)
 }
 

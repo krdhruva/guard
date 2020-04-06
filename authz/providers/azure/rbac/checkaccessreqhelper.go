@@ -158,13 +158,13 @@ func getActionName(verb string) string {
 		fallthrough
 	case "escalate":
 		fallthrough
+	case "use":
+		fallthrough
 	case "impersonate":
 		fallthrough
 
 	case "create":
 		fallthrough //instead of action create will be mapped to write
-	case "post":
-		fallthrough //same for post. As of now 'action' data action is not required on resources
 	case "patch":
 		fallthrough
 	case "update":
@@ -195,8 +195,23 @@ func getDataAction(subRevReq *authzv1.SubjectAccessReviewSpec, clusterType strin
 	return authInfo
 }
 
-func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType, resourceId string) *CheckAccessRequest {
+func prepareCheckAccessRequestBody(req *authzv1.SubjectAccessReviewSpec, clusterType, resourceId string) (*CheckAccessRequest, error) {
 	checkaccessreq := CheckAccessRequest{}
+
+	var userOid string
+	if oid, ok := req.Extra["oid"]; ok {
+		val := oid.String()
+		userOid := oid[1 : len(oid)-1]
+	} else {
+		return nil, errors.New("oid info not sent from authenticatoin module")
+	}
+
+	if isValidUUID(userOid) {
+		checkaccessreq.Subject.Attributes.ObjectId = userOid
+	} else {
+		return nil, errors.New("oid info sent from authenticatoin module is not valid")
+	}
+
 	groups := getValidSecurityGroups(req.Groups)
 	checkaccessreq.Subject.Attributes.Groups = groups
 
@@ -205,7 +220,7 @@ func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType
 	checkaccessreq.Actions = action
 	checkaccessreq.Resource.Id = getScope(resourceId, req.ResourceAttributes)
 
-	return &checkaccessreq
+	return &checkaccessreq, nil
 }
 
 func getNameSpaceScope(req *authzv1.SubjectAccessReviewSpec) (bool, string) {
@@ -226,7 +241,7 @@ func ConvertCheckAccessResponse(body []byte) (*authzv1.SubjectAccessReviewStatus
 	)
 	err := json.Unmarshal(body, &response)
 	if err != nil {
-		glog.V(10).Infoln("Failed to parse checkacccess response. Error:%s", err.Error())
+		glog.V(10).Infof("Failed to parse checkacccess response. Error:%s", err.Error())
 		return nil, errors.Wrap(err, "Error in unmarshalling check access response.")
 	}
 

@@ -65,7 +65,7 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterT
 		apiURL:          rbacURL,
 		tokenProvider:   tokenProvider,
 		azureResourceId: resourceId,
-		armCallLimit:    armCallLimit }
+		armCallLimit:    armCallLimit}
 
 	if clsuterType == "arc" {
 		u.clusterType = connectedClusters
@@ -127,11 +127,12 @@ func (a *AccessInfo) IsTokenExpired() bool {
 }
 
 func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*authzv1.SubjectAccessReviewStatus, error) {
-	checkAccessBody := PrepareCheckAccessRequest(request, a.clusterType, a.azureResourceId)
+	checkAccessBody, err := prepareCheckAccessRequestBody(request, a.clusterType, a.azureResourceId)
 
-	oid := request.Extra["oid"].String()
-	userOid := oid[1:len(oid)-1]
-	checkAccessBody.Subject.Attributes.ObjectId = userOid
+	if err != nil {
+		return nil, errors.Wrap(err, "error in preparing check access request")
+	}
+
 	checkAccessURL := *a.apiURL
 	// Append the path for azure cluster resource id
 	checkAccessURL.Path = path.Join(checkAccessURL.Path, a.azureResourceId)
@@ -144,10 +145,6 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	params := url.Values{}
 	params.Add("api-version", checkAccessAPIVersion)
 	checkAccessURL.RawQuery = params.Encode()
-
-	if a.IsTokenExpired() {
-		a.RefreshToken()
-	}
 
 	buf := new(bytes.Buffer)
 	if err := json.NewEncoder(buf).Encode(checkAccessBody); err != nil {
