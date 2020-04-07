@@ -201,7 +201,7 @@ func prepareCheckAccessRequestBody(req *authzv1.SubjectAccessReviewSpec, cluster
 	var userOid string
 	if oid, ok := req.Extra["oid"]; ok {
 		val := oid.String()
-		userOid := oid[1 : len(oid)-1]
+		userOid = val[1 : len(val)-1]
 	} else {
 		return nil, errors.New("oid info not sent from authenticatoin module")
 	}
