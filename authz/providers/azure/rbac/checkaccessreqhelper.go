@@ -34,7 +34,7 @@ const (
 
 type SubjectInfoAttributes struct {
 	ObjectId string   `json:"ObjectId"`
-	Groups   []string `json:"Groups,omitempty"`
+	Groups   []string `json:"Groups"`
 }
 
 type SubjectInfo struct {
@@ -117,7 +117,7 @@ type AuthorizationDecision struct {
 
 func getScope(resourceId string, attr *authzv1.ResourceAttributes) string {
 	if attr != nil && attr.Namespace != "" {
-		return path.Join(resourceId + namespaces + attr.Namespace)
+		return path.Join(resourceId, namespaces, attr.Namespace)
 	}
 	return resourceId
 }
