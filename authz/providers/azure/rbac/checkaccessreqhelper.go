@@ -234,7 +234,7 @@ func getNameSpaceScope(req *authzv1.SubjectAccessReviewSpec) (bool, string) {
 
 func ConvertCheckAccessResponse(body []byte) (*authzv1.SubjectAccessReviewStatus, error) {
 	var (
-		response AuthorizationDecision
+		response []AuthorizationDecision
 		allowed  bool
 		denied   bool
 		verdict  string
@@ -250,7 +250,7 @@ func ConvertCheckAccessResponse(body []byte) (*authzv1.SubjectAccessReviewStatus
 		glog.Infof("check access response:%s", binaryData)
 	}
 
-	if strings.ToLower(response.Decision) == accessAllowed {
+	if strings.ToLower(response[0].Decision) == accessAllowed {
 		allowed = true
 		verdict = accessAllowed
 	} else {
