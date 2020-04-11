@@ -181,16 +181,14 @@ func (s Server) ListenAndServe() {
 		if s.AuthzRecommendedOptions.AuthzProvider.Has(azure.OrgType) {
 			glog.Infoln("creating cache")
 			options := data.DefaultOptions
-			store, err = data.NewDataStore(options)
+			store, err := data.NewDataStore(options)
 			if store == nil || err != nil {
 				glog.Infof("error in cache. Error:%s", err.Error())
 				glog.Fatalf("Error in initalizing cache. Error:%s", err.Error())
 			}
 			glog.Infoln("cache crated")
-			if authzhandler == nil {
 				glog.Infoln("authz handler is null")
-			}
-			authzhandler.Store = store
+				authzhandler.Store = store
 		}
 	}
 
