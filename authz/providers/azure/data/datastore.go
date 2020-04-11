@@ -14,8 +14,8 @@ const (
 	totalShards      = 128
 	ttlInMins        = 5
 	cleanupInMins    = 2
-	maxEntrySize     = 1000
-	maxEntriesInWin  = 1000 * 10 * 60
+	maxEntrySize     = 100
+	maxEntriesInWin  = 10 * 10 * 60
 )
 
 type DataStore struct {
