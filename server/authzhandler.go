@@ -34,6 +34,7 @@ type Authzhandler struct {
 }
 
 func (s *Authzhandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	glog.Infoln("in authz handler")
 	if req.TLS == nil || len(req.TLS.PeerCertificates) == 0 {
 		writeAuthzResponse(w, nil, nil, WithCode(errors.New("Missing client certificate"), http.StatusBadRequest))
 		return
