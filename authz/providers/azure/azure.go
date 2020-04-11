@@ -21,6 +21,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure"
 	auth "github.com/appscode/guard/auth/providers/azure"
 	"github.com/appscode/guard/authz"
+	"github.com/appscode/guard/authz/providers/azure/data"
 	"github.com/appscode/guard/authz/providers/azure/rbac"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -44,7 +45,7 @@ type authzInfo struct {
 	ARMEndPoint string
 }
 
-func New(opts Options, authopts auth.Options) (authz.Interface, error) {
+func New(opts Options, authopts auth.Options, dataStore *data.DataStore) (authz.Interface, error) {
 	c := &Authorizer{}
 
 	authzInfoVal, err := getAuthInfo(authopts.Environment)
@@ -54,9 +55,9 @@ func New(opts Options, authopts auth.Options) (authz.Interface, error) {
 
 	switch opts.AuthzMode {
 	case auth.ARCAuthzMode:
-		c.rbacClient, err = rbac.New(authopts.ClientID, authopts.ClientSecret, authopts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit)
+		c.rbacClient, err = rbac.New(authopts.ClientID, authopts.ClientSecret, authopts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore)
 	case auth.AKSAuthzMode:
-		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, authopts.TenantID, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit)
+		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, authopts.TenantID, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore)
 	}
 
 	if err != nil {
@@ -74,6 +75,17 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 	if strings.HasPrefix(request.User, "system") {
 		glog.V(3).Infof("returning no op to service accounts")
 		return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "no opinion"}, nil
+	}
+
+	exist, result := s.rbacClient.GetResultFromCache(request)
+	if exist {
+		if result {
+			glog.V(3).Infof("cache hit: returning allowed to user")
+			return &authzv1.SubjectAccessReviewStatus{Allowed: result, Reason: rbac.AccessAllowed}, nil
+		} else {
+			glog.V(3).Infof("cache hit: returning denied to user")
+			return &authzv1.SubjectAccessReviewStatus{Allowed: result, Denied: true, Reason: rbac.NotAllowedVerdict}, nil
+		}
 	}
 
 	if s.rbacClient.IsTokenExpired() {

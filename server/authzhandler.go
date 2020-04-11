@@ -21,6 +21,7 @@ import (
 
 	"github.com/appscode/guard/authz"
 	"github.com/appscode/guard/authz/providers/azure"
+	"github.com/appscode/guard/authz/providers/azure/data"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	authzv1 "k8s.io/api/authorization/v1"
@@ -29,6 +30,7 @@ import (
 type Authzhandler struct {
 	AuthRecommendedOptions  *AuthRecommendedOptions
 	AuthzRecommendedOptions *AuthzRecommendedOptions
+	Store                   *data.DataStore
 }
 
 func (s *Authzhandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -73,7 +75,7 @@ func (s *Authzhandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 func (s *Authzhandler) getAuthzProviderClient(org, commonName string) (authz.Interface, error) {
 	switch strings.ToLower(org) {
 	case azure.OrgType:
-		return azure.New(s.AuthzRecommendedOptions.Azure, s.AuthRecommendedOptions.Azure)
+		return azure.New(s.AuthzRecommendedOptions.Azure, s.AuthRecommendedOptions.Azure, s.Store)
 	}
 
 	return nil, errors.Errorf("Client is using unknown organization %s", org)

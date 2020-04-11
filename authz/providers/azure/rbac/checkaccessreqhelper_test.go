@@ -20,6 +20,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/pkg/errors"
 	authzv1 "k8s.io/api/authorization/v1"
 )
 
@@ -180,25 +181,25 @@ func Test_getNameSpaceScope(t *testing.T) {
 }
 
 func Test_prepareCheckAccessRequestBody(t *testing.T) {
-	req := &authzv1.SubjectAccessReviewSpec{Extra: ""}
+	req := &authzv1.SubjectAccessReviewSpec{Extra: nil}
 	resouceId := "resourceId"
-	type := "aks"
-	want := nil
-	wantErr := true
+	clusterType := "aks"
+	var want *CheckAccessRequest = nil
+	wantErr := errors.New("oid info not sent from authenticatoin module")
 
-	got, gotErr := prepareCheckAccessRequestBody(req, type, resourceresouceId)
+	got, gotErr := prepareCheckAccessRequestBody(req, clusterType, resouceId)
 
 	if got != want && gotErr != wantErr {
 		t.Errorf("Want:%v WantErr:%v, got:%v, gotErr:%v", want, wantErr, got, gotErr)
 	}
 
-	req = &authzv1.SubjectAccessReviewSpec{Extra: map[string]authzv1.ExtraValue{"oid": "test"}}
+	req = &authzv1.SubjectAccessReviewSpec{Extra: map[string]authzv1.ExtraValue{"oid": {"test"}}}
 	resouceId = "resourceId"
-	type = "arc"
+	clusterType = "arc"
 	want = nil
-	wantErr = true
+	wantErr = errors.New("oid info sent from authenticatoin module is not valid")
 
-	got, gotErr = prepareCheckAccessRequestBody(req, type, resourceresouceId)
+	got, gotErr = prepareCheckAccessRequestBody(req, clusterType, resouceId)
 
 	if got != want && gotErr != wantErr {
 		t.Errorf("Want:%v WantErr:%v, got:%v, gotErr:%v", want, wantErr, got, gotErr)

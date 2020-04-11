@@ -27,8 +27,8 @@ import (
 )
 
 const (
-	accessAllowed     = "allowed"
-	notAllowedVerdict = "user does not have access to the resource"
+	AccessAllowed     = "allowed"
+	NotAllowedVerdict = "user does not have access to the resource"
 	namespaces        = "namespaces"
 )
 
@@ -195,6 +195,24 @@ func getDataAction(subRevReq *authzv1.SubjectAccessReviewSpec, clusterType strin
 	return authInfo
 }
 
+func getResultCacheKey(subRevReq *authzv1.SubjectAccessReviewSpec) string {
+	cacheKey := subRevReq.User
+
+	if subRevReq.ResourceAttributes != nil {
+		if subRevReq.ResourceAttributes.Namespace != "" {
+			cacheKey = path.Join(cacheKey, subRevReq.ResourceAttributes.Namespace)
+		}
+		if subRevReq.ResourceAttributes.Group != "" {
+			cacheKey = path.Join(cacheKey, subRevReq.ResourceAttributes.Group)
+		}
+		cacheKey = path.Join(cacheKey, subRevReq.ResourceAttributes.Resource, getActionName(subRevReq.ResourceAttributes.Verb))
+	} else if subRevReq.NonResourceAttributes != nil {
+		cacheKey = path.Join(cacheKey, subRevReq.NonResourceAttributes.Path, getActionName(subRevReq.NonResourceAttributes.Verb))
+	}
+
+	return cacheKey
+}
+
 func prepareCheckAccessRequestBody(req *authzv1.SubjectAccessReviewSpec, clusterType, resourceId string) (*CheckAccessRequest, error) {
 	checkaccessreq := CheckAccessRequest{}
 
@@ -250,13 +268,13 @@ func ConvertCheckAccessResponse(body []byte) (*authzv1.SubjectAccessReviewStatus
 		glog.Infof("check access response:%s", binaryData)
 	}
 
-	if strings.ToLower(response[0].Decision) == accessAllowed {
+	if strings.ToLower(response[0].Decision) == AccessAllowed {
 		allowed = true
-		verdict = accessAllowed
+		verdict = AccessAllowed
 	} else {
 		allowed = false
 		denied = true
-		verdict = notAllowedVerdict
+		verdict = NotAllowedVerdict
 	}
 
 	return &authzv1.SubjectAccessReviewStatus{Allowed: allowed, Reason: verdict, Denied: denied}, nil

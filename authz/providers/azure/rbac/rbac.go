@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/appscode/guard/auth/providers/azure/graph"
+	"github.com/appscode/guard/authz/providers/azure/data"
 	"github.com/golang/glog"
 	"github.com/moul/http2curl"
 	"github.com/pkg/errors"
@@ -54,9 +55,10 @@ type AccessInfo struct {
 	clusterType     string
 	azureResourceId string
 	armCallLimit    int
+	dataStore       *data.DataStore
 }
 
-func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterType, resourceId string, armCallLimit int) (*AccessInfo, error) {
+func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterType, resourceId string, armCallLimit int, dataStore *data.DataStore) (*AccessInfo, error) {
 	u := &AccessInfo{
 		client: http.DefaultClient,
 		headers: http.Header{
@@ -65,7 +67,9 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterT
 		apiURL:          rbacURL,
 		tokenProvider:   tokenProvider,
 		azureResourceId: resourceId,
-		armCallLimit:    armCallLimit}
+
+		armCallLimit: armCallLimit,
+		dataStore:    dataStore}
 
 	if clsuterType == "arc" {
 		u.clusterType = connectedClusters
@@ -78,7 +82,7 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterT
 	return u, nil
 }
 
-func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType, resourceId string, armCallLimit int) (*AccessInfo, error) {
+func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore *data.DataStore) (*AccessInfo, error) {
 	rbacURL, err := url.Parse(armEndPoint)
 
 	if err != nil {
@@ -89,10 +93,10 @@ func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType
 		fmt.Sprintf("%s%s/oauth2/v2.0/token", aadEndpoint, tenantID),
 		fmt.Sprintf("%s.default", armEndPoint))
 
-	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit)
+	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore)
 }
 
-func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string, armCallLimit int) (*AccessInfo, error) {
+func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore *data.DataStore) (*AccessInfo, error) {
 	rbacURL, err := url.Parse(armEndPoint)
 
 	if err != nil {
@@ -100,7 +104,7 @@ func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string,
 	}
 	tokenProvider := graph.NewAKSTokenProvider(tokenURL, tenantID)
 
-	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit)
+	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore)
 }
 
 func (a *AccessInfo) RefreshToken() error {
@@ -124,6 +128,18 @@ func (a *AccessInfo) IsTokenExpired() bool {
 	} else {
 		return false
 	}
+}
+
+func (a *AccessInfo) GetResultFromCache(request *authzv1.SubjectAccessReviewSpec) (bool, bool) {
+	var result bool
+	key := getResultCacheKey(request)
+	found, _ := a.dataStore.Get(key, &result)
+	return found, result
+}
+
+func (a *AccessInfo) SetResultInCache(request *authzv1.SubjectAccessReviewSpec, result bool) error {
+	key := getResultCacheKey(request)
+	return a.dataStore.Set(key, result)
 }
 
 func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*authzv1.SubjectAccessReviewStatus, error) {
@@ -205,5 +221,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	}
 
 	// Decode response and prepare k8s response
-	return ConvertCheckAccessResponse(data)
+	response, err := ConvertCheckAccessResponse(data)
+	a.SetResultInCache(request, response.Allowed)
+	return response, err
 }
