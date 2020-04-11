@@ -163,6 +163,7 @@ func (s Server) ListenAndServe() {
 		}
 	}))
 
+	glog.Infoln("setting up authz providers")
 	if len(s.AuthzRecommendedOptions.AuthzProvider.Providers) > 0 {
 		authzhandler := Authzhandler{
 			AuthRecommendedOptions:  s.AuthRecommendedOptions,
@@ -178,6 +179,7 @@ func (s Server) ListenAndServe() {
 		m.Post("/subjectaccessreviews", authzPromHandler)
 
 		if s.AuthzRecommendedOptions.AuthzProvider.Has(azure.OrgType) {
+			glog.Infoln("creating cache")
 			options := data.DefaultOptions
 			authzhandler.Store, err = data.NewDataStore(options)
 			if authzhandler.Store == nil || err != nil {
