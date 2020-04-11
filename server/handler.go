@@ -32,7 +32,6 @@ import (
 )
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	glog.Infoln("in auth handler")
 	if req.TLS == nil || len(req.TLS.PeerCertificates) == 0 {
 		write(w, nil, WithCode(errors.New("Missing client certificate"), http.StatusBadRequest))
 		return

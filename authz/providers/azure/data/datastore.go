@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/allegro/bigcache"
-	"github.com/golang/glog"
 )
 
 const (
@@ -132,7 +131,6 @@ func NewDataStore(options Options) (*DataStore, error) {
 
 	cache, err := bigcache.NewBigCache(config)
 	if err != nil || cache == nil {
-		glog.Infof("error in cache:%s", err.Error())
 		return nil, err
 	}
 
