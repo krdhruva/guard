@@ -183,8 +183,10 @@ func (s Server) ListenAndServe() {
 			options := data.DefaultOptions
 			authzhandler.Store, err = data.NewDataStore(options)
 			if authzhandler.Store == nil || err != nil {
+				glog.Infof("error in cache. Error:%s", err.Error())
 				glog.Fatalf("Error in initalizing cache. Error:%s", err.Error())
 			}
+			glog.Infoln("cache crated")
 		}
 	}
 
