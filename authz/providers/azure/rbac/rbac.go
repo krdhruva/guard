@@ -43,7 +43,7 @@ const (
 	expiryDelta             = 60 * time.Second
 )
 
-type void struct {}
+type void struct{}
 
 // AccessInfo allows you to check user access from MS RBAC
 type AccessInfo struct {
@@ -70,13 +70,13 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterT
 		apiURL:          rbacURL,
 		tokenProvider:   tokenProvider,
 		azureResourceId: resourceId,
-		armCallLimit: armCallLimit,
-		dataStore:    dataStore,}
+		armCallLimit:    armCallLimit,
+		dataStore:       dataStore}
 
 	u.skipCheck = make(map[string]void, len(skipList))
 	var member void
 	for _, s := range skipList {
-		u.skipCheck[s] = member
+		u.skipCheck[string.ToLower(s)] = member
 	}
 
 	if clsuterType == "arc" {
@@ -112,7 +112,7 @@ func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string,
 	}
 	tokenProvider := graph.NewAKSTokenProvider(tokenURL, tenantID)
 
-	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore, []string {""})
+	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore, []string{""})
 }
 
 func (a *AccessInfo) RefreshToken() error {
@@ -148,8 +148,8 @@ func (a *AccessInfo) GetResultFromCache(request *authzv1.SubjectAccessReviewSpec
 
 func (a *AccessInfo) SkipAuthzCheck(request *authzv1.SubjectAccessReviewSpec) bool {
 	if a.clusterType == connectedClusters {
-		_, ok := a.skipCheck[request.User] 
-	    	return ok
+		_, ok := a.skipCheck[request.User]
+		return ok
 	}
 	return false
 }
