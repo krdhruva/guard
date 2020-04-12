@@ -4,7 +4,6 @@ go 1.12
 
 require (
 	github.com/Azure/go-autorest/autorest v0.9.0
-	github.com/allegro/bigcache v1.2.1 // indirect
 	github.com/appscode/go v0.0.0-20191119085241-0887d8ec2ecc
 	github.com/appscode/guard/authz v0.0.0-00010101000000-000000000000
 	github.com/appscode/guard/authz/providers v0.0.0-00010101000000-000000000000
@@ -17,11 +16,8 @@ require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/google/go-github/v25 v25.1.3
 	github.com/google/gofuzz v1.0.0
-	github.com/hashicorp/go-uuid v1.0.2 // indirect
-	github.com/jcmturner/gofork v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.7
 	github.com/moul/http2curl v1.0.0
-	github.com/nmcclain/asn1-ber v0.0.0-20170104154839-2661553a0484 // indirect
 	github.com/nmcclain/ldap v0.0.0-20191021200707-3b3b69a7e9e3
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
@@ -37,10 +33,6 @@ require (
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	gomodules.xyz/cert v1.0.2
 	google.golang.org/api v0.6.1-0.20190607001116-5213b8090861
-	gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d // indirect
-	gopkg.in/jcmturner/aescts.v1 v1.0.1 // indirect
-	gopkg.in/jcmturner/dnsutils.v1 v1.0.1 // indirect
-	gopkg.in/jcmturner/goidentity.v1 v1.0.0 // indirect
 	gopkg.in/jcmturner/gokrb5.v4 v4.1.2
 	gopkg.in/square/go-jose.v2 v2.2.2
 	k8s.io/api v0.17.3

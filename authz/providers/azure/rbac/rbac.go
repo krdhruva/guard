@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 	"strconv"
 	"time"
 
@@ -76,7 +77,7 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterT
 	u.skipCheck = make(map[string]void, len(skipList))
 	var member void
 	for _, s := range skipList {
-		u.skipCheck[string.ToLower(s)] = member
+		u.skipCheck[strings.ToLower(s)] = member
 	}
 
 	if clsuterType == "arc" {
