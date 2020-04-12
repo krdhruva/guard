@@ -33,8 +33,9 @@ const (
 )
 
 type SubjectInfoAttributes struct {
-	ObjectId string   `json:"ObjectId"`
-	Groups   []string `json:"Groups"`
+	ObjectId       string   `json:"ObjectId"`
+	Groups         []string `json:"Groups"`
+	RetrieveGroups bool     `json:"xms-pasrp-retrievegroupmemberships"`
 }
 
 type SubjectInfo struct {
@@ -231,7 +232,11 @@ func prepareCheckAccessRequestBody(req *authzv1.SubjectAccessReviewSpec, cluster
 	}
 
 	groups := getValidSecurityGroups(req.Groups)
-	checkaccessreq.Subject.Attributes.Groups = groups
+	if len(groups) > 0 {
+		checkaccessreq.Subject.Attributes.Groups = groups
+	} else {
+		checkaccessreq.Subject.Attributes.RetrieveGroups = true
+	}
 
 	action := make([]AuthorizationActionInfo, 1)
 	action[0] = getDataAction(req, clusterType)
