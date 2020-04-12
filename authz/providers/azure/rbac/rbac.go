@@ -133,12 +133,14 @@ func (a *AccessInfo) IsTokenExpired() bool {
 func (a *AccessInfo) GetResultFromCache(request *authzv1.SubjectAccessReviewSpec) (bool, bool) {
 	var result bool
 	key := getResultCacheKey(request)
+	glog.V(10).Infof("Cache search for key: %s", key)
 	found, _ := a.dataStore.Get(key, &result)
 	return found, result
 }
 
 func (a *AccessInfo) SetResultInCache(request *authzv1.SubjectAccessReviewSpec, result bool) error {
 	key := getResultCacheKey(request)
+	glog.V(10).Infof("Cache set for key: %s, value: %t", key, result)
 	return a.dataStore.Set(key, result)
 }
 
@@ -195,6 +197,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 		return nil, errors.Wrap(err, "error in reading response body")
 	}
 
+	glog.V(10).Infof("checkaccess response: %s", string(data))
 	defer resp.Body.Close()
 	glog.V(10).Infof("Configured ARM instance: %d", a.armCallLimit)
 	if resp.StatusCode != http.StatusOK {

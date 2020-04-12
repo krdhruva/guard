@@ -205,3 +205,55 @@ func Test_prepareCheckAccessRequestBody(t *testing.T) {
 		t.Errorf("Want:%v WantErr:%v, got:%v, gotErr:%v", want, wantErr, got, gotErr)
 	}
 }
+
+func Test_getResultCacheKey(t *testing.T) {
+	type args struct {
+		subRevReq *authzv1.SubjectAccessReviewSpec
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"aks", args{
+			subRevReq: &authzv1.SubjectAccessReviewSpec{
+				User:                  "charlie@yahoo.com",
+				NonResourceAttributes: &authzv1.NonResourceAttributes{Path: "/apis/v1", Verb: "list"}}},
+			"charlie@yahoo.com/apis/v1/read"},
+
+		{"aks", args{
+			subRevReq: &authzv1.SubjectAccessReviewSpec{
+				User:                  "echo@outlook.com",
+				NonResourceAttributes: &authzv1.NonResourceAttributes{Path: "/logs", Verb: "get"}}},
+			"echo@outlook.com/logs/read"},
+
+		{"aks", args{
+			subRevReq: &authzv1.SubjectAccessReviewSpec{
+				User: "alpha@bing.com",
+				ResourceAttributes: &authzv1.ResourceAttributes{NameSpace: "dev", Group: "", Resource: "pods",
+					Subresource: "status", Version: "v1", Name: "test", Verb: "delete"}}},
+			"alpha@bing.com/dev/pods/read"},
+
+		{"arc", args{
+			subRevReq: &authzv1.SubjectAccessReviewSpec{
+				User: "beta@msn.com",
+				ResourceAttributes: &authzv1.ResourceAttributes{NameSpace: "azure-arc",
+					Group: "authentication.k8s.io", Resource: "userextras", Subresource: "scopes", Version: "v1",
+					Name: "test", Verb: "impersonate"}}},
+			"beta@msn.com/azure-arc/authentication.k8s.io/userextras/action"},
+
+		{"arc", args{
+			subRevReq: &authzv1.SubjectAccessReviewSpec{
+				User: "beta@msn.com",
+				ResourceAttributes: &authzv1.ResourceAttributes{NameSpace: "", Group: "", Resource: "nodes",
+					Subresource: "scopes", Version: "v1", Name: "", Verb: "list"}}},
+			"beta@msn.com/nodes/read"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getResultCacheKey(tt.args.subRevReq); got != tt.want {
+				t.Errorf("getResultCacheKey() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

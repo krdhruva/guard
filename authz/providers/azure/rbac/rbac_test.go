@@ -20,9 +20,11 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"time"
+
+	"github.com/appscode/guard/authz/providers/azure/data"
 )
 
-func getAPIServerAndAccessInfo(returnCode int, body, clusterType, resourceId string) (*httptest.Server, *AccessInfo) {
+func getAPIServerAndAccessInfo(returnCode int, body, clusterType, resourceId string, dataStore *data.DataStore) (*httptest.Server, *AccessInfo) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(returnCode)
 		_, _ = w.Write([]byte(body))
@@ -36,27 +38,63 @@ func getAPIServerAndAccessInfo(returnCode int, body, clusterType, resourceId str
 		clusterType:     clusterType,
 		azureResourceId: resourceId,
 		armCallLimit:    0,
-		dataStore:       nil}
+		dataStore:       dataStore}
 	return ts, u
 }
 
-/*
+
 func TestCheckAccess(t *testing.T) {
 	t.Run("successful request", func(t *testing.T) {
-		var validBody = `{
-  "value": [
-      "f36ec2c5-fa5t-4f05-b87f-deadbeef"
-  ]
-}`
-		ts, u := getAPIServerAndUserInfo(http.StatusOK, validBody, "aks", "resourceid")
+		var validBody = `[
+			{
+				"accessDecision": "Allowed",
+				"actionId": "Microsoft.Kubernetes/connectedClusters/api/read",
+				"isDataAction": true,
+				"roleAssignment": {
+					"DelegatedManagedIdentityResourceId": "",
+					"Id": "2356a662cf2d43a6a63ec09edd297e6a",
+					"RoleDefinitionId": "456aab9a7f234dae8a7b4cfdb999545e",
+					"PrincipalId": "53d5f1372fae4bf591d1d420e323c6a9",
+					"PrincipalType": "Group",
+					"Scope": "/subscriptions/7cbe213b-b960-4db1-872a-c26d4993d995/resourceGroups/KDRG/providers/Microsoft.Kubernetes/connectedClusters/KSD-Test4",
+					"Condition": "",
+					"ConditionVersion": "",
+					"CanDelegate": false
+				},
+				"denyAssignment": {
+					"IsSystemProtected": "",
+					"Id": "",
+					"Name": "",
+					"Description": "",
+					"Scope": "",
+					"DoNotApplyToChildScopes": false,
+					"Condition": "",
+					"ConditionVersion": ""
+				},
+				"timeToLiveInMs": 300000
+			}
+		]`
+
+		var TestOptions = Options {
+			HardMaxCacheSize:   1,
+			Shards:             1,
+			LifeWindow:         1 * time.Minute,
+			CleanWindow:        1 * time.Minute,
+			MaxEntriesInWindow: 10,
+			MaxEntrySize:       5,
+			Verbose:            false,
+		}
+		
+		authzhandler.Store, err = data.NewDataStore(TestOptions)
+		ts, u := getAPIServerAndAccessInfo(http.StatusOK, validBody, "arc", "resourceid")
 		defer ts.Close()
 
-		groups, err := u.getGroupIDs("john.michael.kane@yacht.io")
+		response, err := u.CheckAccess(request)
 		if err != nil {
-			t.Errorf("Should not have gotten error: %s", err)
+			t.Errorf("Should not have gotten error: %s", err.Error())
 		}
-		if len(groups) != 1 {
-			t.Errorf("Should have gotten a list of group IDs with 1 entry. Got: %d", len(groups))
+		if !response.Allowed || response.Denied)
+			t.Errorf("Should have gotten access allowed. Got: Allowed:%t, Denied:%t", respresponse.Allowed, resresponse.Denied)
 		}
 	})
 
@@ -108,4 +146,3 @@ func TestCheckAccess(t *testing.T) {
 		}
 	})
 }
-*/
