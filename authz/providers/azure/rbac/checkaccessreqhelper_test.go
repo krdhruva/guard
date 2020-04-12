@@ -230,14 +230,14 @@ func Test_getResultCacheKey(t *testing.T) {
 		{"aks", args{
 			subRevReq: &authzv1.SubjectAccessReviewSpec{
 				User: "alpha@bing.com",
-				ResourceAttributes: &authzv1.ResourceAttributes{NameSpace: "dev", Group: "", Resource: "pods",
+				ResourceAttributes: &authzv1.ResourceAttributes{Namespace: "dev", Group: "", Resource: "pods",
 					Subresource: "status", Version: "v1", Name: "test", Verb: "delete"}}},
 			"alpha@bing.com/dev/pods/read"},
 
 		{"arc", args{
 			subRevReq: &authzv1.SubjectAccessReviewSpec{
 				User: "beta@msn.com",
-				ResourceAttributes: &authzv1.ResourceAttributes{NameSpace: "azure-arc",
+				ResourceAttributes: &authzv1.ResourceAttributes{Namespace: "azure-arc",
 					Group: "authentication.k8s.io", Resource: "userextras", Subresource: "scopes", Version: "v1",
 					Name: "test", Verb: "impersonate"}}},
 			"beta@msn.com/azure-arc/authentication.k8s.io/userextras/action"},
@@ -245,7 +245,7 @@ func Test_getResultCacheKey(t *testing.T) {
 		{"arc", args{
 			subRevReq: &authzv1.SubjectAccessReviewSpec{
 				User: "beta@msn.com",
-				ResourceAttributes: &authzv1.ResourceAttributes{NameSpace: "", Group: "", Resource: "nodes",
+				ResourceAttributes: &authzv1.ResourceAttributes{Namespace: "", Group: "", Resource: "nodes",
 					Subresource: "scopes", Version: "v1", Name: "", Verb: "list"}}},
 			"beta@msn.com/nodes/read"},
 	}

@@ -16,20 +16,25 @@ limitations under the License.
 package rbac
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"testing"
 	"time"
 
+	"github.com/appscode/guard/auth/providers/azure/graph"
 	"github.com/appscode/guard/authz/providers/azure/data"
+	authzv1 "k8s.io/api/authorization/v1"
 )
 
-func getAPIServerAndAccessInfo(returnCode int, body, clusterType, resourceId string, dataStore *data.DataStore) (*httptest.Server, *AccessInfo) {
+func getAPIServerAndAccessInfo(returnCode int, body, clusterType, resourceId string, options data.Options) (*httptest.Server, *AccessInfo) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(returnCode)
 		_, _ = w.Write([]byte(body))
 	}))
 	apiURL, _ := url.Parse(ts.URL)
+	datastore, _ := data.NewDataStore(options)
 	u := &AccessInfo{
 		client:          http.DefaultClient,
 		apiURL:          apiURL,
@@ -38,44 +43,17 @@ func getAPIServerAndAccessInfo(returnCode int, body, clusterType, resourceId str
 		clusterType:     clusterType,
 		azureResourceId: resourceId,
 		armCallLimit:    0,
-		dataStore:       dataStore}
+		dataStore:       datastore}
 	return ts, u
 }
 
-
 func TestCheckAccess(t *testing.T) {
 	t.Run("successful request", func(t *testing.T) {
-		var validBody = `[
-			{
-				"accessDecision": "Allowed",
-				"actionId": "Microsoft.Kubernetes/connectedClusters/api/read",
-				"isDataAction": true,
-				"roleAssignment": {
-					"DelegatedManagedIdentityResourceId": "",
-					"Id": "2356a662cf2d43a6a63ec09edd297e6a",
-					"RoleDefinitionId": "456aab9a7f234dae8a7b4cfdb999545e",
-					"PrincipalId": "53d5f1372fae4bf591d1d420e323c6a9",
-					"PrincipalType": "Group",
-					"Scope": "/subscriptions/7cbe213b-b960-4db1-872a-c26d4993d995/resourceGroups/KDRG/providers/Microsoft.Kubernetes/connectedClusters/KSD-Test4",
-					"Condition": "",
-					"ConditionVersion": "",
-					"CanDelegate": false
-				},
-				"denyAssignment": {
-					"IsSystemProtected": "",
-					"Id": "",
-					"Name": "",
-					"Description": "",
-					"Scope": "",
-					"DoNotApplyToChildScopes": false,
-					"Condition": "",
-					"ConditionVersion": ""
-				},
-				"timeToLiveInMs": 300000
-			}
-		]`
+		var validBody = `[{"accessDecision":"Allowed",
+		"actionId":"Microsoft.Kubernetes/connectedClusters/pods/delete",
+		"isDataAction":true,"roleAssignment":null,"denyAssignment":null,"timeToLiveInMs":300000}]`
 
-		var TestOptions = Options {
+		var testOptions = data.Options{
 			HardMaxCacheSize:   1,
 			Shards:             1,
 			LifeWindow:         1 * time.Minute,
@@ -84,65 +62,159 @@ func TestCheckAccess(t *testing.T) {
 			MaxEntrySize:       5,
 			Verbose:            false,
 		}
-		
-		authzhandler.Store, err = data.NewDataStore(TestOptions)
-		ts, u := getAPIServerAndAccessInfo(http.StatusOK, validBody, "arc", "resourceid")
+
+		ts, u := getAPIServerAndAccessInfo(http.StatusOK, validBody, "arc", "resourceid", testOptions)
 		defer ts.Close()
+
+		request := &authzv1.SubjectAccessReviewSpec{
+			User: "alpha@bing.com",
+			ResourceAttributes: &authzv1.ResourceAttributes{Namespace: "dev", Group: "", Resource: "pods",
+				Subresource: "status", Version: "v1", Name: "test", Verb: "delete"}}
 
 		response, err := u.CheckAccess(request)
 		if err != nil {
 			t.Errorf("Should not have gotten error: %s", err.Error())
 		}
-		if !response.Allowed || response.Denied)
-			t.Errorf("Should have gotten access allowed. Got: Allowed:%t, Denied:%t", respresponse.Allowed, resresponse.Denied)
+		if !response.Allowed || response.Denied {
+			t.Errorf("Should have gotten access allowed. Got: Allowed:%t, Denied:%t", response.Allowed, response.Denied)
 		}
 	})
 
 	//scenarios: bad check access body - encoding issue
 	// error in http request
 	// http client Do return error
-	// return code 200, 429, other
 
-	t.Run("bad server response", func(t *testing.T) {
-		ts, u := getAPIServerAndUserInfo(http.StatusInternalServerError, "shutdown")
+	t.Run("too many requests", func(t *testing.T) {
+		var validBody = `""`
+
+		var testOptions = data.Options{
+			HardMaxCacheSize:   1,
+			Shards:             1,
+			LifeWindow:         1 * time.Minute,
+			CleanWindow:        1 * time.Minute,
+			MaxEntriesInWindow: 10,
+			MaxEntrySize:       5,
+			Verbose:            false,
+		}
+
+		ts, u := getAPIServerAndAccessInfo(http.StatusTooManyRequests, validBody, "arc", "resourceid", testOptions)
 		defer ts.Close()
 
-		groups, err := u.getGroupIDs("alexander.conklin@cia.gov")
+		request := &authzv1.SubjectAccessReviewSpec{
+			User: "alpha@bing.com",
+			ResourceAttributes: &authzv1.ResourceAttributes{Namespace: "dev", Group: "", Resource: "pods",
+				Subresource: "status", Version: "v1", Name: "test", Verb: "delete"}}
+
+		response, err := u.CheckAccess(request)
+		if response != nil {
+			t.Errorf("Should have got nil response")
+		}
+
+		if err != nil {
+			t.Errorf("should have got error")
+		}
+	})
+
+	t.Run("check acess not available", func(t *testing.T) {
+		var validBody = `""`
+
+		var testOptions = data.Options{
+			HardMaxCacheSize:   1,
+			Shards:             1,
+			LifeWindow:         1 * time.Minute,
+			CleanWindow:        1 * time.Minute,
+			MaxEntriesInWindow: 10,
+			MaxEntrySize:       5,
+			Verbose:            false,
+		}
+
+		ts, u := getAPIServerAndAccessInfo(http.StatusInternalServerError, validBody,
+			"arc", "resourceid", testOptions)
+		defer ts.Close()
+
+		request := &authzv1.SubjectAccessReviewSpec{
+			User: "alpha@bing.com",
+			ResourceAttributes: &authzv1.ResourceAttributes{Namespace: "dev", Group: "", Resource: "pods",
+				Subresource: "status", Version: "v1", Name: "test", Verb: "delete"}}
+
+		response, err := u.CheckAccess(request)
+		if response != nil {
+			t.Errorf("Should have got nil response")
+		}
+
+		if err != nil {
+			t.Errorf("should have got error")
+		}
+	})
+}
+
+func getAuthServerAndAccessInfo(returnCode int, body, clientID, clientSecret string) (*httptest.Server, *AccessInfo) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(returnCode)
+		_, _ = w.Write([]byte(body))
+	}))
+	u := &AccessInfo{
+		client:  http.DefaultClient,
+		headers: http.Header{},
+	}
+	u.tokenProvider = graph.NewClientCredentialTokenProvider(clientID, clientSecret, ts.URL, "")
+	return ts, u
+}
+
+func TestLogin(t *testing.T) {
+	t.Run("successful login", func(t *testing.T) {
+		var validToken = "blackbriar"
+		var validBody = `{
+							"token_type": "Bearer",
+							"expires_in": 3599,
+							"access_token": "%s"
+						}`
+		ts, u := getAuthServerAndAccessInfo(http.StatusOK, fmt.Sprintf(validBody, validToken), "jason", "bourne")
+		defer ts.Close()
+
+		err := u.RefreshToken("")
+		if err != nil {
+			t.Errorf("Error when trying to log in: %s", err)
+		}
+		if u.headers.Get("Authorization") != fmt.Sprintf("Bearer %s", validToken) {
+			t.Errorf("Authorization header should be set. Expected: %q. Got: %q", fmt.Sprintf("Bearer %s", validToken), u.headers.Get("Authorization"))
+		}
+		if !time.Now().Before(u.expires) {
+			t.Errorf("Expiry not set properly. Expected it to be after the current time. Actual: %v", u.expires)
+		}
+	})
+
+	t.Run("unsuccessful login", func(t *testing.T) {
+		ts, u := getAuthServerAndAccessInfo(http.StatusUnauthorized, "Unauthorized", "CIA", "treadstone")
+		defer ts.Close()
+
+		err := u.RefreshToken("")
 		if err == nil {
 			t.Error("Should have gotten error")
 		}
-		if groups != nil {
-			t.Error("Group list should be nil")
-		}
 	})
+
 	t.Run("request error", func(t *testing.T) {
-		badURL, _ := url.Parse("https://127.0.0.1:34567")
-		u := &UserInfo{
-			client:        http.DefaultClient,
-			apiURL:        badURL,
-			headers:       http.Header{},
-			expires:       time.Now().Add(time.Hour),
-			groupsPerCall: expandedGroupsPerCall,
+		badURL := "https://127.0.0.1:34567"
+		u := &AccessInfo{
+			client:  http.DefaultClient,
+			headers: http.Header{},
 		}
+		u.tokenProvider = graph.NewClientCredentialTokenProvider("CIA", "outcome", badURL, "")
 
-		groups, err := u.getGroupIDs("richard.webb@cia.gov")
+		err := u.RefreshToken("")
 		if err == nil {
 			t.Error("Should have gotten error")
-		}
-		if groups != nil {
-			t.Error("Group list should be nil")
 		}
 	})
+
 	t.Run("bad response body", func(t *testing.T) {
-		ts, u := getAPIServerAndUserInfo(http.StatusOK, "{bad_json")
+		ts, u := getAuthServerAndAccessInfo(http.StatusOK, "{bad_json", "CIA", "treadstone")
 		defer ts.Close()
 
-		groups, err := u.getGroupIDs("nicky.parsons@cia.gov")
+		err := u.RefreshToken("")
 		if err == nil {
 			t.Error("Should have gotten error")
-		}
-		if groups != nil {
-			t.Error("Group list should be nil")
 		}
 	})
 }

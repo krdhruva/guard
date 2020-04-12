@@ -48,9 +48,9 @@ type authzInfo struct {
 func New(opts Options, authopts auth.Options, dataStore *data.DataStore) (authz.Interface, error) {
 	c := &Authorizer{}
 
-	authzInfoVal, err := getAuthInfo(authopts.Environment)
+	authzInfoVal, err := getAuthzInfo(authopts.Environment)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error in getAuthInfo %s")
+		return nil, errors.Wrap(err, "Error in getAuthzInfo %s")
 	}
 
 	switch opts.AuthzMode {
@@ -77,6 +77,13 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 		return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "no opinion"}, nil
 	}
 
+	// TODO: handle AKS glass break
+
+	if a.rbacClient.SkipAuthzCheck(request) {
+		glog.V(3).Infof("user %s is part of skip authz list. returning no op.", request.User)
+		return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "no opinion"}, nil
+	}
+
 	exist, result := s.rbacClient.GetResultFromCache(request)
 	if exist {
 		if result {
@@ -94,7 +101,7 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 	return s.rbacClient.CheckAccess(request)
 }
 
-func getAuthInfo(environment string) (*authzInfo, error) {
+func getAuthzInfo(environment string) (*authzInfo, error) {
 	var err error
 	env := azure.PublicCloud
 	if environment != "" {

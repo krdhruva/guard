@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/appscode/guard/auth"
 	"github.com/appscode/guard/auth/providers/azure"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
@@ -32,10 +33,11 @@ const (
 )
 
 type Options struct {
-	AuthzMode    string
-	ResourceId   string
-	AKSAuthzURL  string
-	ARMCallLimit int
+	AuthzMode      string
+	ResourceId     string
+	AKSAuthzURL    string
+	ARMCallLimit   int
+	SkipAuthzCheck []string
 }
 
 func NewOptions() Options {
@@ -47,6 +49,7 @@ func (o *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.ResourceId, "azure.resource-id", "", "azure cluster resource id (//subscription/<subName>/resourcegroups/<RGname>/providers/Microsoft.ContainerService/managedClusters/<clustername> for AKS or //subscription/<subName>/resourcegroups/<RGname>/providers/Microsoft.Kubernetes/connectedClusters/<clustername> for arc) to be used as scope for RBAC check")
 	fs.StringVar(&o.AKSAuthzURL, "azure.aks-authz-url", "", "url to call for AKS Authz flow")
 	fs.IntVar(&o.ARMCallLimit, "azure.arm-call-limit", defaultArmCallLimit, "No of calls before which webhook switch to new ARM instance to avoid throttling")
+	fs.StringSliceVar(&o.SkipAuthzCheck, "azure.skip-authz-check", "", ,"name of usernames/email for which authz check will be skipped")
 }
 
 func (o *Options) Validate(azure azure.Options) []error {
@@ -66,6 +69,10 @@ func (o *Options) Validate(azure azure.Options) []error {
 
 	if o.AuthzMode == AKSAuthzMode && o.AKSAuthzURL == "" {
 		errs = append(errs, errors.New("azure.aks-authz-url must be non-empty"))
+	}
+
+	if o.AuthzMode == AKSAuthzMode && len(o.SkipAuthzCheck) > 0) {
+		errs = append(errs, errors.New("azure.skip-authz-check must be set only with arc authz mode"))
 	}
 
 	if o.AuthzMode != AKSAuthzMode && o.AKSAuthzURL != "" {
@@ -102,6 +109,10 @@ func (o Options) Apply(d *apps.Deployment) (extraObjs []runtime.Object, err erro
 
 	if o.AKSAuthzURL != "" {
 		args = append(args, fmt.Sprintf("--azure.aks-authz-url=%s", o.AKSAuthzURL))
+	}
+
+	if len(o.SkipAuthzCheck) > 0 {
+		args = append(args, fmt.Sprintf("--azure.skip-authz-check=%s", strings.Join(o.SkipAuthzCheck, ",")))
 	}
 
 	container.Args = args

@@ -56,9 +56,10 @@ type AccessInfo struct {
 	azureResourceId string
 	armCallLimit    int
 	dataStore       *data.DataStore
+	skipCheck       map[string]struct{}
 }
 
-func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterType, resourceId string, armCallLimit int, dataStore *data.DataStore) (*AccessInfo, error) {
+func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterType, resourceId string, armCallLimit int, dataStore *data.DataStore, skipList []string) (*AccessInfo, error) {
 	u := &AccessInfo{
 		client: http.DefaultClient,
 		headers: http.Header{
@@ -71,6 +72,11 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterT
 		armCallLimit: armCallLimit,
 		dataStore:    dataStore}
 
+	skipCheck = make(map[string]struct{}, len(skipList))
+	for _, s := range skipList {
+		set[s] = struct{}{}
+	}
+
 	if clsuterType == "arc" {
 		u.clusterType = connectedClusters
 	}
@@ -82,7 +88,7 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterT
 	return u, nil
 }
 
-func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore *data.DataStore) (*AccessInfo, error) {
+func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore *data.DataStore, skipCheck []string) (*AccessInfo, error) {
 	rbacURL, err := url.Parse(armEndPoint)
 
 	if err != nil {
@@ -93,7 +99,7 @@ func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType
 		fmt.Sprintf("%s%s/oauth2/v2.0/token", aadEndpoint, tenantID),
 		fmt.Sprintf("%s.default", armEndPoint))
 
-	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore)
+	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore, skipCheck)
 }
 
 func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore *data.DataStore) (*AccessInfo, error) {
@@ -104,7 +110,7 @@ func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string,
 	}
 	tokenProvider := graph.NewAKSTokenProvider(tokenURL, tenantID)
 
-	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore)
+	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore, {""})
 }
 
 func (a *AccessInfo) RefreshToken() error {
@@ -136,6 +142,13 @@ func (a *AccessInfo) GetResultFromCache(request *authzv1.SubjectAccessReviewSpec
 	glog.V(10).Infof("Cache search for key: %s", key)
 	found, _ := a.dataStore.Get(key, &result)
 	return found, result
+}
+
+func (a *AccessInfo) SkipAuthzCheck(request *authzv1.SubjectAccessReviewSpec) bool {
+	if a.clusterType == connectedClusters {
+		_, ok := a.skipCheck[request.User] 
+    	return ok
+	}
 }
 
 func (a *AccessInfo) SetResultInCache(request *authzv1.SubjectAccessReviewSpec, result bool) error {
