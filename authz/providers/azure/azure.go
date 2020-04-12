@@ -55,7 +55,7 @@ func New(opts Options, authopts auth.Options, dataStore *data.DataStore) (authz.
 
 	switch opts.AuthzMode {
 	case auth.ARCAuthzMode:
-		c.rbacClient, err = rbac.New(authopts.ClientID, authopts.ClientSecret, authopts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore)
+		c.rbacClient, err = rbac.New(authopts.ClientID, authopts.ClientSecret, authopts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore, opts.SkipAuthzCheck)
 	case auth.AKSAuthzMode:
 		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, authopts.TenantID, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore)
 	}
@@ -79,7 +79,7 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 
 	// TODO: handle AKS glass break
 
-	if a.rbacClient.SkipAuthzCheck(request) {
+	if s.rbacClient.SkipAuthzCheck(request) {
 		glog.V(3).Infof("user %s is part of skip authz list. returning no op.", request.User)
 		return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "no opinion"}, nil
 	}

@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/appscode/guard/auth"
 	"github.com/appscode/guard/auth/providers/azure"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
@@ -49,7 +48,7 @@ func (o *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.ResourceId, "azure.resource-id", "", "azure cluster resource id (//subscription/<subName>/resourcegroups/<RGname>/providers/Microsoft.ContainerService/managedClusters/<clustername> for AKS or //subscription/<subName>/resourcegroups/<RGname>/providers/Microsoft.Kubernetes/connectedClusters/<clustername> for arc) to be used as scope for RBAC check")
 	fs.StringVar(&o.AKSAuthzURL, "azure.aks-authz-url", "", "url to call for AKS Authz flow")
 	fs.IntVar(&o.ARMCallLimit, "azure.arm-call-limit", defaultArmCallLimit, "No of calls before which webhook switch to new ARM instance to avoid throttling")
-	fs.StringSliceVar(&o.SkipAuthzCheck, "azure.skip-authz-check", "", ,"name of usernames/email for which authz check will be skipped")
+	fs.StringSliceVar(&o.SkipAuthzCheck, "azure.skip-authz-check", []string{""}, "name of usernames/email for which authz check will be skipped")
 }
 
 func (o *Options) Validate(azure azure.Options) []error {
@@ -71,7 +70,7 @@ func (o *Options) Validate(azure azure.Options) []error {
 		errs = append(errs, errors.New("azure.aks-authz-url must be non-empty"))
 	}
 
-	if o.AuthzMode == AKSAuthzMode && len(o.SkipAuthzCheck) > 0) {
+	if o.AuthzMode == AKSAuthzMode && len(o.SkipAuthzCheck) > 0 {
 		errs = append(errs, errors.New("azure.skip-authz-check must be set only with arc authz mode"))
 	}
 
