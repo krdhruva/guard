@@ -51,5 +51,6 @@ func NewCmdInstaller() *cobra.Command {
 		},
 	}
 	authopts.AddFlags(cmd.Flags())
+	authzopts.AddFlags(cmd.Flags())
 	return cmd
 }

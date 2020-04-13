@@ -37,9 +37,8 @@ func Test_getScope(t *testing.T) {
 		{"nilAttr", args{"resourceId", nil}, "resourceId"},
 		{"bothnil", args{"", nil}, ""},
 		{"emptyRes", args{"", &authzv1.ResourceAttributes{Namespace: ""}}, ""},
-		{"emptyRes2", args{"", &authzv1.ResourceAttributes{Namespace: "test"}}, "/namespace/test"},
 		{"emptyNS", args{"resourceId", &authzv1.ResourceAttributes{Namespace: ""}}, "resourceId"},
-		{"bothPresent", args{"resourceId", &authzv1.ResourceAttributes{Namespace: "test"}}, "resourceId/namespace/test"},
+		{"bothPresent", args{"resourceId", &authzv1.ResourceAttributes{Namespace: "test"}}, "resourceId/namespaces/test"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -133,7 +132,7 @@ func Test_getDataAction(t *testing.T) {
 		{"aks5", args{
 			subRevReq: &authzv1.SubjectAccessReviewSpec{
 				ResourceAttributes: &authzv1.ResourceAttributes{Group: "events.k8s.io", Resource: "events", Subresource: "status", Version: "v1", Name: "test", Verb: "watch"}}, clusterType: "aks"},
-			AuthorizationActionInfo{AuthorizationEntity: AuthorizationEntity{Id: "aks/events.k8s.io/events/get"}, IsDataAction: true}},
+			AuthorizationActionInfo{AuthorizationEntity: AuthorizationEntity{Id: "aks/events.k8s.io/events/read"}, IsDataAction: true}},
 
 		{"arc6", args{
 			subRevReq: &authzv1.SubjectAccessReviewSpec{
@@ -232,7 +231,7 @@ func Test_getResultCacheKey(t *testing.T) {
 				User: "alpha@bing.com",
 				ResourceAttributes: &authzv1.ResourceAttributes{Namespace: "dev", Group: "", Resource: "pods",
 					Subresource: "status", Version: "v1", Name: "test", Verb: "delete"}}},
-			"alpha@bing.com/dev/pods/read"},
+			"alpha@bing.com/dev/pods/delete"},
 
 		{"arc", args{
 			subRevReq: &authzv1.SubjectAccessReviewSpec{

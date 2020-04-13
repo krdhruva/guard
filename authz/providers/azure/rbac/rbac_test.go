@@ -75,14 +75,14 @@ func TestCheckAccess(t *testing.T) {
 		if err != nil {
 			t.Errorf("Should not have gotten error: %s", err.Error())
 		}
+
+		if response == nil {
+			t.Errorf("Got nil in response")
+		}
 		if !response.Allowed || response.Denied {
 			t.Errorf("Should have gotten access allowed. Got: Allowed:%t, Denied:%t", response.Allowed, response.Denied)
 		}
 	})
-
-	//scenarios: bad check access body - encoding issue
-	// error in http request
-	// http client Do return error
 
 	t.Run("too many requests", func(t *testing.T) {
 		var validBody = `""`
@@ -172,15 +172,15 @@ func TestLogin(t *testing.T) {
 		ts, u := getAuthServerAndAccessInfo(http.StatusOK, fmt.Sprintf(validBody, validToken), "jason", "bourne")
 		defer ts.Close()
 
-		err := u.RefreshToken("")
+		err := u.RefreshToken()
 		if err != nil {
 			t.Errorf("Error when trying to log in: %s", err)
 		}
 		if u.headers.Get("Authorization") != fmt.Sprintf("Bearer %s", validToken) {
 			t.Errorf("Authorization header should be set. Expected: %q. Got: %q", fmt.Sprintf("Bearer %s", validToken), u.headers.Get("Authorization"))
 		}
-		if !time.Now().Before(u.expires) {
-			t.Errorf("Expiry not set properly. Expected it to be after the current time. Actual: %v", u.expires)
+		if !time.Now().Before(u.expiresAt) {
+			t.Errorf("Expiry not set properly. Expected it to be after the current time. Actual: %v", u.expiresAt)
 		}
 	})
 
@@ -188,7 +188,7 @@ func TestLogin(t *testing.T) {
 		ts, u := getAuthServerAndAccessInfo(http.StatusUnauthorized, "Unauthorized", "CIA", "treadstone")
 		defer ts.Close()
 
-		err := u.RefreshToken("")
+		err := u.RefreshToken()
 		if err == nil {
 			t.Error("Should have gotten error")
 		}
@@ -202,7 +202,7 @@ func TestLogin(t *testing.T) {
 		}
 		u.tokenProvider = graph.NewClientCredentialTokenProvider("CIA", "outcome", badURL, "")
 
-		err := u.RefreshToken("")
+		err := u.RefreshToken()
 		if err == nil {
 			t.Error("Should have gotten error")
 		}
@@ -212,7 +212,7 @@ func TestLogin(t *testing.T) {
 		ts, u := getAuthServerAndAccessInfo(http.StatusOK, "{bad_json", "CIA", "treadstone")
 		defer ts.Close()
 
-		err := u.RefreshToken("")
+		err := u.RefreshToken()
 		if err == nil {
 			t.Error("Should have gotten error")
 		}

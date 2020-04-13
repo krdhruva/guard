@@ -24,6 +24,7 @@ import (
 	"net/url"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/appscode/guard/auth/providers/azure/graph"
@@ -76,7 +77,7 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterT
 	u.skipCheck = make(map[string]void, len(skipList))
 	var member void
 	for _, s := range skipList {
-		u.skipCheck[string.ToLower(s)] = member
+		u.skipCheck[strings.ToLower(s)] = member
 	}
 
 	if clsuterType == "arc" {
@@ -148,7 +149,7 @@ func (a *AccessInfo) GetResultFromCache(request *authzv1.SubjectAccessReviewSpec
 
 func (a *AccessInfo) SkipAuthzCheck(request *authzv1.SubjectAccessReviewSpec) bool {
 	if a.clusterType == connectedClusters {
-		_, ok := a.skipCheck[request.User]
+		_, ok := a.skipCheck[strings.ToLower(request.User)]
 		return ok
 	}
 	return false
