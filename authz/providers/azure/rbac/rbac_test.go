@@ -69,16 +69,14 @@ func TestCheckAccess(t *testing.T) {
 		request := &authzv1.SubjectAccessReviewSpec{
 			User: "alpha@bing.com",
 			ResourceAttributes: &authzv1.ResourceAttributes{Namespace: "dev", Group: "", Resource: "pods",
-				Subresource: "status", Version: "v1", Name: "test", Verb: "delete"}}
+				Subresource: "status", Version: "v1", Name: "test", Verb: "delete"}, Extra: map[string]authzv1.ExtraValue{"oid": {"00000000-0000-0000-0000-000000000000"}}}
 
 		response, err := u.CheckAccess(request)
+
 		if err != nil {
 			t.Errorf("Should not have gotten error: %s", err.Error())
 		}
 
-		if response == nil {
-			t.Errorf("Got nil in response")
-		}
 		if !response.Allowed || response.Denied {
 			t.Errorf("Should have gotten access allowed. Got: Allowed:%t, Denied:%t", response.Allowed, response.Denied)
 		}
@@ -103,14 +101,15 @@ func TestCheckAccess(t *testing.T) {
 		request := &authzv1.SubjectAccessReviewSpec{
 			User: "alpha@bing.com",
 			ResourceAttributes: &authzv1.ResourceAttributes{Namespace: "dev", Group: "", Resource: "pods",
-				Subresource: "status", Version: "v1", Name: "test", Verb: "delete"}}
+				Subresource: "status", Version: "v1", Name: "test", Verb: "delete"}, Extra: map[string]authzv1.ExtraValue{"oid": {"00000000-0000-0000-0000-000000000000"}}}
 
 		response, err := u.CheckAccess(request)
+
 		if response != nil {
 			t.Errorf("Should have got nil response")
 		}
 
-		if err != nil {
+		if err == nil {
 			t.Errorf("should have got error")
 		}
 	})
@@ -135,14 +134,14 @@ func TestCheckAccess(t *testing.T) {
 		request := &authzv1.SubjectAccessReviewSpec{
 			User: "alpha@bing.com",
 			ResourceAttributes: &authzv1.ResourceAttributes{Namespace: "dev", Group: "", Resource: "pods",
-				Subresource: "status", Version: "v1", Name: "test", Verb: "delete"}}
+				Subresource: "status", Version: "v1", Name: "test", Verb: "delete"}, Extra: map[string]authzv1.ExtraValue{"oid": {"00000000-0000-0000-0000-000000000000"}}}
 
 		response, err := u.CheckAccess(request)
 		if response != nil {
 			t.Errorf("Should have got nil response")
 		}
 
-		if err != nil {
+		if err == nil {
 			t.Errorf("should have got error")
 		}
 	})
