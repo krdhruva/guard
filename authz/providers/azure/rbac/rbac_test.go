@@ -25,10 +25,11 @@ import (
 
 	"github.com/appscode/guard/auth/providers/azure/graph"
 	"github.com/appscode/guard/authz/providers/azure/data"
+	"github.com/stretchr/testify/assert"
 	authzv1 "k8s.io/api/authorization/v1"
 )
 
-func getAPIServerAndAccessInfo(returnCode int, body, clusterType, resourceId string, options data.Options) (*httptest.Server, *AccessInfo) {
+func getAPIServerAndAccessInfo(returnCode int, body, clusterType, resourceId string, options data.Options) (*httptest.Server, *AccessInfo, *data.DataStore) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(returnCode)
 		_, _ = w.Write([]byte(body))
@@ -44,7 +45,7 @@ func getAPIServerAndAccessInfo(returnCode int, body, clusterType, resourceId str
 		azureResourceId: resourceId,
 		armCallLimit:    0,
 		dataStore:       datastore}
-	return ts, u
+	return ts, u, datastore
 }
 
 func TestCheckAccess(t *testing.T) {
@@ -63,8 +64,9 @@ func TestCheckAccess(t *testing.T) {
 			Verbose:            false,
 		}
 
-		ts, u := getAPIServerAndAccessInfo(http.StatusOK, validBody, "arc", "resourceid", testOptions)
+		ts, u, store := getAPIServerAndAccessInfo(http.StatusOK, validBody, "arc", "resourceid", testOptions)
 		defer ts.Close()
+		defer store.Close()
 
 		request := &authzv1.SubjectAccessReviewSpec{
 			User: "alpha@bing.com",
@@ -73,13 +75,10 @@ func TestCheckAccess(t *testing.T) {
 
 		response, err := u.CheckAccess(request)
 
-		if err != nil {
-			t.Errorf("Should not have gotten error: %s", err.Error())
-		}
-
-		if !response.Allowed || response.Denied {
-			t.Errorf("Should have gotten access allowed. Got: Allowed:%t, Denied:%t", response.Allowed, response.Denied)
-		}
+		assert.Nilf(t, err, "Should not have got error")
+		assert.NotNil(t, response)
+		assert.Equal(t, response.Allowed, true)
+		assert.Equal(t, response.Denied, false)
 	})
 
 	t.Run("too many requests", func(t *testing.T) {
@@ -95,8 +94,9 @@ func TestCheckAccess(t *testing.T) {
 			Verbose:            false,
 		}
 
-		ts, u := getAPIServerAndAccessInfo(http.StatusTooManyRequests, validBody, "arc", "resourceid", testOptions)
+		ts, u, store := getAPIServerAndAccessInfo(http.StatusTooManyRequests, validBody, "arc", "resourceid", testOptions)
 		defer ts.Close()
+		defer store.Close()
 
 		request := &authzv1.SubjectAccessReviewSpec{
 			User: "alpha@bing.com",
@@ -105,13 +105,8 @@ func TestCheckAccess(t *testing.T) {
 
 		response, err := u.CheckAccess(request)
 
-		if response != nil {
-			t.Errorf("Should have got nil response")
-		}
-
-		if err == nil {
-			t.Errorf("should have got error")
-		}
+		assert.Nilf(t, response, "response should be nil")
+		assert.NotNilf(t, err, "should get error")
 	})
 
 	t.Run("check acess not available", func(t *testing.T) {
@@ -127,9 +122,10 @@ func TestCheckAccess(t *testing.T) {
 			Verbose:            false,
 		}
 
-		ts, u := getAPIServerAndAccessInfo(http.StatusInternalServerError, validBody,
+		ts, u, store := getAPIServerAndAccessInfo(http.StatusInternalServerError, validBody,
 			"arc", "resourceid", testOptions)
 		defer ts.Close()
+		defer store.Close()
 
 		request := &authzv1.SubjectAccessReviewSpec{
 			User: "alpha@bing.com",
@@ -137,13 +133,9 @@ func TestCheckAccess(t *testing.T) {
 				Subresource: "status", Version: "v1", Name: "test", Verb: "delete"}, Extra: map[string]authzv1.ExtraValue{"oid": {"00000000-0000-0000-0000-000000000000"}}}
 
 		response, err := u.CheckAccess(request)
-		if response != nil {
-			t.Errorf("Should have got nil response")
-		}
 
-		if err == nil {
-			t.Errorf("should have got error")
-		}
+		assert.Nilf(t, response, "response should be nil")
+		assert.NotNilf(t, err, "should get error")
 	})
 }
 
@@ -188,9 +180,7 @@ func TestLogin(t *testing.T) {
 		defer ts.Close()
 
 		err := u.RefreshToken()
-		if err == nil {
-			t.Error("Should have gotten error")
-		}
+		assert.NotNilf(t, err, "Should have gotten error")
 	})
 
 	t.Run("request error", func(t *testing.T) {
@@ -202,9 +192,7 @@ func TestLogin(t *testing.T) {
 		u.tokenProvider = graph.NewClientCredentialTokenProvider("CIA", "outcome", badURL, "")
 
 		err := u.RefreshToken()
-		if err == nil {
-			t.Error("Should have gotten error")
-		}
+		assert.NotNilf(t, err, "Should have gotten error")
 	})
 
 	t.Run("bad response body", func(t *testing.T) {
@@ -212,8 +200,6 @@ func TestLogin(t *testing.T) {
 		defer ts.Close()
 
 		err := u.RefreshToken()
-		if err == nil {
-			t.Error("Should have gotten error")
-		}
+		assert.NotNilf(t, err, "Should have gotten error")
 	})
 }
