@@ -26,7 +26,7 @@ import (
 	"github.com/appscode/guard/authz/providers/azure/data"
 	"github.com/appscode/guard/authz/providers/azure/rbac"
 	"github.com/appscode/pat"
-	"github.com/dgrijalva/jwt-go/request"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -50,8 +50,7 @@ func clientSetup(serverUrl, mode string) (*Authorizer, error) {
 		return nil, err
 	}
 
-	c.rbacClient, err = rbac.New("client_id", "client_secret", "tenant_id", serverUrl+"login", serverUrl+"/arm", mode, "resourceId", 2000, dataStore, []{"alpha, tango, charlie"}])
-
+	c.rbacClient, err = rbac.New("client_id", "client_secret", "tenant_id", serverUrl+"login", serverUrl+"/arm", mode, "resourceId", 2000, dataStore, []string{"alpha, tango, charlie"})
 	if err != nil {
 		return nil, err
 	}
@@ -120,6 +119,3 @@ func TestCheck(t *testing.T) {
 		assert.Equal(t, resp.Denied, false)
 	})
 }
-
-
-

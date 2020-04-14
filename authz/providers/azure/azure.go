@@ -54,9 +54,9 @@ func New(opts Options, authopts auth.Options, dataStore *data.DataStore) (authz.
 	}
 
 	switch opts.AuthzMode {
-	case auth.ARCAuthzMode:
+	case ARCAuthzMode:
 		c.rbacClient, err = rbac.New(authopts.ClientID, authopts.ClientSecret, authopts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore, opts.SkipAuthzCheck)
-	case auth.AKSAuthzMode:
+	case AKSAuthzMode:
 		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, authopts.TenantID, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore)
 	}
 

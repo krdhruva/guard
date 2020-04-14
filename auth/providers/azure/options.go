@@ -34,8 +34,6 @@ const (
 	AKSAuthMode              = "aks"
 	OBOAuthMode              = "obo"
 	ClientCredentialAuthMode = "client-credential"
-	AKSAuthzMode             = "aks"
-	ARCAuthzMode             = "arc"
 )
 
 type Options struct {
