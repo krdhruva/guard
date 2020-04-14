@@ -70,10 +70,6 @@ func (o *Options) Validate(azure azure.Options) []error {
 		errs = append(errs, errors.New("azure.aks-authz-url must be non-empty"))
 	}
 
-	if o.AuthzMode == AKSAuthzMode && len(o.SkipAuthzCheck) > 0 {
-		errs = append(errs, errors.New("azure.skip-authz-check must be set only with arc authz mode"))
-	}
-
 	if o.AuthzMode != AKSAuthzMode && o.AKSAuthzURL != "" {
 		errs = append(errs, errors.New("azure.aks-authz-url must be set only with AKS authz mode"))
 	}
