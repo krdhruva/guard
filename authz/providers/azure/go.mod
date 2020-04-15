@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/Azure/go-autorest v12.2.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.9.0
+	github.com/allegro/bigcache v1.2.1 // indirect
 	github.com/appscode/guard v0.5.0-rc.1
 	github.com/appscode/guard/authz v0.0.0-00010101000000-000000000000
 	github.com/appscode/guard/authz/providers/azure/data v0.0.0-00010101000000-000000000000
@@ -21,8 +22,3 @@ require (
 	k8s.io/apimachinery v0.18.1
 )
 
-replace (
-	github.com/appscode/guard/authz => ./../../../authz
-	github.com/appscode/guard/authz/providers/azure/data => ./data
-	github.com/appscode/guard/authz/providers/azure/rbac => ./rbac
-)
