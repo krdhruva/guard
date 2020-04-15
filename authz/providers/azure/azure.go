@@ -87,10 +87,10 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 	exist, result := s.rbacClient.GetResultFromCache(request)
 	if exist {
 		if result {
-			glog.V(3).Infof("cache hit: returning allowed to user")
+			glog.V(3).Infof("cache hit: returning allowed to user %s", request.User)
 			return &authzv1.SubjectAccessReviewStatus{Allowed: result, Reason: rbac.AccessAllowed}, nil
 		} else {
-			glog.V(3).Infof("cache hit: returning denied to user")
+			glog.V(3).Infof("cache hit: returning denied to user %s", request.User)
 			return &authzv1.SubjectAccessReviewStatus{Allowed: result, Denied: true, Reason: rbac.NotAllowedVerdict}, nil
 		}
 	}
