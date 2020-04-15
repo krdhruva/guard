@@ -142,8 +142,8 @@ func (a *AccessInfo) IsTokenExpired() bool {
 func (a *AccessInfo) GetResultFromCache(request *authzv1.SubjectAccessReviewSpec) (bool, bool) {
 	var result bool
 	key := getResultCacheKey(request)
-	glog.V(10).Infof("Cache search for key: %s", key)
 	found, _ := a.dataStore.Get(key, &result)
+	glog.V(10).Infof("Cache search for key: %s, found: %b", key, found)
 	return found, result
 }
 
