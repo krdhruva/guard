@@ -218,7 +218,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	defer resp.Body.Close()
 	glog.V(10).Infof("Configured ARM call limit: %d", a.armCallLimit)
 	if resp.StatusCode != http.StatusOK {
-		glog.Errorf("error in check access response. error code: %d, response: %s", resp.StatusCode, data)
+		glog.Errorf("error in check access response. error code: %d, response: %s", resp.StatusCode, string(data))
 		if resp.StatusCode == http.StatusTooManyRequests {
 			glog.V(10).Infoln("Moving to another ARM instance!")
 			a.client.CloseIdleConnections()
