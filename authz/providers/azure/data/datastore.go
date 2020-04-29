@@ -115,7 +115,7 @@ var DefaultOptions = Options{
 	Verbose:            false,
 }
 
-// NewStore creates a BigCache store.
+// NewDataStore creates a BigCache store.
 func NewDataStore(options Options) (*DataStore, error) {
 	config := bigcache.Config{
 		Shards:             options.Shards,

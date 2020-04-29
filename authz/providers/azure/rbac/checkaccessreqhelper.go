@@ -225,13 +225,13 @@ func prepareCheckAccessRequestBody(req *authzv1.SubjectAccessReviewSpec, cluster
 		val := oid.String()
 		userOid = val[1 : len(val)-1]
 	} else {
-		return nil, errors.New("oid info not sent from authenticatoin module")
+		return nil, errors.New("oid info not sent from authentication module")
 	}
 
 	if isValidUUID(userOid) {
 		checkaccessreq.Subject.Attributes.ObjectId = userOid
 	} else {
-		return nil, errors.New("oid info sent from authenticatoin module is not valid")
+		return nil, errors.New("oid info sent from authentication module is not valid")
 	}
 
 	groups := getValidSecurityGroups(req.Groups)

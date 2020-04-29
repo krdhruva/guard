@@ -216,13 +216,13 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 
 	glog.V(10).Infof("checkaccess response: %s", string(data))
 	defer resp.Body.Close()
-	glog.V(10).Infof("Configured ARM instance: %d", a.armCallLimit)
+	glog.V(10).Infof("Configured ARM call limit: %d", a.armCallLimit)
 	if resp.StatusCode != http.StatusOK {
 		glog.Errorf("error in check access response. error code: %d, response: %s", resp.StatusCode, data)
 		if resp.StatusCode == http.StatusTooManyRequests {
 			glog.V(10).Infoln("Moving to another ARM instance!")
 			a.client.CloseIdleConnections()
-			// add prom metrics for this scenario
+			// TODO: add prom metrics for this scenario
 		}
 		return nil, errors.Errorf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
 	} else {
