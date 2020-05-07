@@ -30,7 +30,7 @@ import (
 type Authzhandler struct {
 	AuthRecommendedOptions  *AuthRecommendedOptions
 	AuthzRecommendedOptions *AuthzRecommendedOptions
-	Store                   *data.DataStore
+	Store                   *authz.Store
 }
 
 func (s *Authzhandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -53,7 +53,6 @@ func (s *Authzhandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	defer req.Body.Close()
 	binaryData, _ := json.MarshalIndent(&data, "", "    ")
 	glog.V(10).Infof("Authz req:%s", binaryData)
 

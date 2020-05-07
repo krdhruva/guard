@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/allegro/bigcache"
+	"github.com/appscode/guard/authz"
 )
 
 const (
@@ -116,7 +117,7 @@ var DefaultOptions = Options{
 }
 
 // NewDataStore creates a BigCache store.
-func NewDataStore(options Options) (*DataStore, error) {
+func NewDataStore(options Options) (*authz.Store, error) {
 	config := bigcache.Config{
 		Shards:             options.Shards,
 		LifeWindow:         options.LifeWindow,

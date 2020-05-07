@@ -51,8 +51,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	defer req.Body.Close()
-
 	if !s.AuthRecommendedOptions.AuthProvider.Has(org) {
 		write(w, nil, WithCode(errors.Errorf("guard does not provide service for %v", org), http.StatusBadRequest))
 		return

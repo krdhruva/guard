@@ -214,9 +214,8 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 		return nil, errors.Wrap(err, "error in reading response body")
 	}
 
-	glog.V(10).Infof("checkaccess response: %s", string(data))
 	defer resp.Body.Close()
-	glog.V(10).Infof("Configured ARM call limit: %d", a.armCallLimit)
+	glog.V(10).Infof("checkaccess response: %s, Configured ARM call limit: %d", string(data), a.armCallLimit)
 	if resp.StatusCode != http.StatusOK {
 		glog.Errorf("error in check access response. error code: %d, response: %s", resp.StatusCode, string(data))
 		if resp.StatusCode == http.StatusTooManyRequests {
@@ -242,6 +241,10 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 
 	// Decode response and prepare k8s response
 	response, err := ConvertCheckAccessResponse(data)
-	a.SetResultInCache(request, response.Allowed)
+	if err != nil {
+		a.SetResultInCache(request, response.Allowed)
+	} else {
+		a.SetResultInCache(request, false)
+	}
 	return response, err
 }
