@@ -37,7 +37,6 @@ func init() {
 }
 
 type Authorizer struct {
-	auth.Options
 	rbacClient *rbac.AccessInfo
 }
 
@@ -46,21 +45,19 @@ type authzInfo struct {
 	ARMEndPoint string
 }
 
-func New(opts auth.Options, dataStore *data.DataStore) (authz.Interface, error) {
-	c := &Authorizer{
-		Options: opts,
-	}
+func New(opts Options, authopts auth.Options, dataStore *data.DataStore) (authz.Interface, error) {
+	c := &Authorizer{}
 
-	authzInfoVal, err := getAuthInfo(opts.Environment)
+	authzInfoVal, err := getAuthzInfo(authopts.Environment)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error in getAuthInfo %s")
+		return nil, errors.Wrap(err, "Error in getAuthzInfo %s")
 	}
 
 	switch opts.AuthzMode {
-	case auth.ARCAuthzMode:
-		c.rbacClient, err = rbac.New(opts.ClientID, opts.ClientSecret, opts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit)
-	case auth.AKSAuthzMode:
-		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, opts.TenantID, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit)
+	case ARCAuthzMode:
+		c.rbacClient, err = rbac.New(authopts.ClientID, authopts.ClientSecret, authopts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore, opts.SkipAuthzCheck)
+	case AKSAuthzMode:
+		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, authopts.TenantID, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore)
 	}
 
 	if err != nil {
@@ -75,14 +72,36 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 	}
 
 	// check if user is service account
-	if strings.HasPrefix(request.User, "system") {
+	if strings.HasPrefix(strings.ToLower(request.User), "system") {
 		glog.V(3).Infof("returning no op to service accounts")
 		return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "no opinion"}, nil
+	}
+
+	// TODO: handle AKS glass break
+
+	if s.rbacClient.SkipAuthzCheck(request) {
+		glog.V(3).Infof("user %s is part of skip authz list. returning no op.", request.User)
+		return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "no opinion"}, nil
+	}
+
+	exist, result := s.rbacClient.GetResultFromCache(request)
+	if exist {
+		if result {
+			glog.V(3).Infof("cache hit: returning allowed to user")
+			return &authzv1.SubjectAccessReviewStatus{Allowed: result, Reason: rbac.AccessAllowed}, nil
+		} else {
+			glog.V(3).Infof("cache hit: returning denied to user")
+			return &authzv1.SubjectAccessReviewStatus{Allowed: result, Denied: true, Reason: rbac.NotAllowedVerdict}, nil
+		}
+	}
+
+	if s.rbacClient.IsTokenExpired() {
+		s.rbacClient.RefreshToken()
 	}
 	return s.rbacClient.CheckAccess(request)
 }
 
-func getAuthInfo(environment string) (*authzInfo, error) {
+func getAuthzInfo(environment string) (*authzInfo, error) {
 	var err error
 	env := azure.PublicCloud
 	if environment != "" {

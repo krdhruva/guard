@@ -26,15 +26,12 @@ import (
 	"github.com/appscode/guard/auth/providers/google"
 	"github.com/appscode/guard/auth/providers/ldap"
 	"github.com/appscode/guard/auth/providers/token"
-	"github.com/appscode/guard/authz"
-	azureAuthz "github.com/appscode/guard/authz/providers/azure"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	authv1 "k8s.io/api/authentication/v1"
-	authzv1 "k8s.io/api/authorization/v1"
 )
 
-func (s Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if req.TLS == nil || len(req.TLS.PeerCertificates) == 0 {
 		write(w, nil, WithCode(errors.New("Missing client certificate"), http.StatusBadRequest))
 		return
@@ -54,14 +51,12 @@ func (s Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	defer req.Body.Close()
-
-	if !s.RecommendedOptions.AuthProvider.Has(org) {
+	if !s.AuthRecommendedOptions.AuthProvider.Has(org) {
 		write(w, nil, WithCode(errors.Errorf("guard does not provide service for %v", org), http.StatusBadRequest))
 		return
 	}
 
-	if s.RecommendedOptions.AuthProvider.Has(token.OrgType) && s.TokenAuthenticator != nil {
+	if s.AuthRecommendedOptions.AuthProvider.Has(token.OrgType) && s.TokenAuthenticator != nil {
 		resp, err := s.TokenAuthenticator.Check(data.Spec.Token)
 		if err == nil {
 			write(w, resp, err)
@@ -79,66 +74,18 @@ func (s Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	write(w, resp, err)
 }
 
-func (s Server) getAuthProviderClient(org, commonName string) (auth.Interface, error) {
+func (s *Server) getAuthProviderClient(org, commonName string) (auth.Interface, error) {
 	switch strings.ToLower(org) {
 	case github.OrgType:
-		return github.New(s.RecommendedOptions.Github, commonName), nil
+		return github.New(s.AuthRecommendedOptions.Github, commonName), nil
 	case google.OrgType:
-		return google.New(s.RecommendedOptions.Google, commonName)
+		return google.New(s.AuthRecommendedOptions.Google, commonName)
 	case gitlab.OrgType:
-		return gitlab.New(s.RecommendedOptions.Gitlab), nil
+		return gitlab.New(s.AuthRecommendedOptions.Gitlab), nil
 	case azure.OrgType:
-		glog.V(10).Infof("store is %v", s.Store == nil)
-		return azure.New(s.RecommendedOptions.Azure, s.Store)
+		return azure.New(s.AuthRecommendedOptions.Azure)
 	case ldap.OrgType:
-		return ldap.New(s.RecommendedOptions.LDAP), nil
-	}
-
-	return nil, errors.Errorf("Client is using unknown organization %s", org)
-}
-
-func (s Server) Authzhandler(w http.ResponseWriter, req *http.Request) {
-	if req.TLS == nil || len(req.TLS.PeerCertificates) == 0 {
-		writeAuthzResponse(w, nil, nil, WithCode(errors.New("Missing client certificate"), http.StatusBadRequest))
-		return
-	}
-	crt := req.TLS.PeerCertificates[0]
-	if len(crt.Subject.Organization) == 0 {
-		writeAuthzResponse(w, nil, nil, WithCode(errors.New("Client certificate is missing organization"), http.StatusBadRequest))
-		return
-	}
-	org := crt.Subject.Organization[0]
-	glog.Infof("Received subject access review request for %s/%s", org, crt.Subject.CommonName)
-
-	data := authzv1.SubjectAccessReview{}
-	err := json.NewDecoder(req.Body).Decode(&data)
-	if err != nil {
-		writeAuthzResponse(w, nil, nil, WithCode(errors.Wrap(err, "Failed to parse request"), http.StatusBadRequest))
-		return
-	}
-
-	defer req.Body.Close()
-
-	if !s.RecommendedOptions.AuthzProvider.Has(org) {
-		writeAuthzResponse(w, &data.Spec, nil, WithCode(errors.Errorf("guard does not provide service for %v", org), http.StatusBadRequest))
-		return
-	}
-
-	client, err := s.getAuthzProviderClient(org, crt.Subject.CommonName)
-	if err != nil {
-		writeAuthzResponse(w, &data.Spec, nil, err)
-		return
-	}
-
-	resp, err := client.Check(&data.Spec)
-	writeAuthzResponse(w, &data.Spec, resp, err)
-}
-
-func (s Server) getAuthzProviderClient(org, commonName string) (authz.Interface, error) {
-	switch strings.ToLower(org) {
-	case azureAuthz.OrgType:
-		glog.V(10).Infof("cache is %v", s.Store == nil)
-		return azureAuthz.New(s.RecommendedOptions.Azure, s.Store)
+		return ldap.New(s.AuthRecommendedOptions.LDAP), nil
 	}
 
 	return nil, errors.Errorf("Client is using unknown organization %s", org)

@@ -4,6 +4,7 @@ go 1.12
 
 require (
 	github.com/Azure/go-autorest/autorest v0.9.0
+	github.com/allegro/bigcache v1.2.1 // indirect
 	github.com/appscode/go v0.0.0-20191119085241-0887d8ec2ecc
 	github.com/appscode/guard/authz v0.0.0-00010101000000-000000000000
 	github.com/appscode/guard/authz/providers v0.0.0-00010101000000-000000000000
