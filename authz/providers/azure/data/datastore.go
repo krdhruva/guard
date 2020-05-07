@@ -24,7 +24,7 @@ type DataStore struct {
 
 // Set stores the given value for the given key.
 // The key must not be "" and the value must not be nil.
-func (s DataStore) Set(key string, value interface{}) error {
+func (s *DataStore) Set(key string, value interface{}) error {
 	if key == "" || value == nil {
 		return errors.New("invalid key value pair")
 	}
@@ -39,7 +39,7 @@ func (s DataStore) Set(key string, value interface{}) error {
 // Get retrieves the Stored value for the given key.
 // If no value is found it returns (false, nil).
 // The key must not be "" and the pointer must not be nil.
-func (s DataStore) Get(key string, value interface{}) (found bool, err error) {
+func (s *DataStore) Get(key string, value interface{}) (found bool, err error) {
 	if key == "" || value == nil {
 		return false, errors.New("invalid key value pair")
 	}
@@ -54,7 +54,7 @@ func (s DataStore) Get(key string, value interface{}) (found bool, err error) {
 
 // Delete deletes the stored value for the given key.
 // The key must not be "".
-func (s DataStore) Delete(key string) error {
+func (s *DataStore) Delete(key string) error {
 	if key == "" {
 		return errors.New("invalid key")
 	}
@@ -69,7 +69,7 @@ func (s DataStore) Delete(key string) error {
 
 // Close closes the DataStore.
 // When called, the cache is left for removal by the garbage collector.
-func (s DataStore) Close() error {
+func (s *DataStore) Close() error {
 	return s.cache.Close()
 }
 
@@ -117,7 +117,7 @@ var DefaultOptions = Options{
 }
 
 // NewDataStore creates a BigCache store.
-func NewDataStore(options Options) (*authz.Store, error) {
+func NewDataStore(options Options) (authz.Store, error) {
 	config := bigcache.Config{
 		Shards:             options.Shards,
 		LifeWindow:         options.LifeWindow,

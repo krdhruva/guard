@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/appscode/guard/auth/providers/azure/graph"
+	"github.com/appscode/guard/authz"
 	"github.com/golang/glog"
 	"github.com/moul/http2curl"
 	"github.com/pkg/errors"
@@ -47,21 +48,22 @@ type void struct{}
 
 // AccessInfo allows you to check user access from MS RBAC
 type AccessInfo struct {
-	headers   http.Header
-	client    *http.Client
-	expiresAt time.Time
+	headers   			http.Header
+	client    			*http.Client
+	expiresAt 			time.Time
 	// These allow us to mock out the URL for testing
-	apiURL *url.URL
+	apiURL 				*url.URL
 
-	tokenProvider   graph.TokenProvider
-	clusterType     string
-	azureResourceId string
-	armCallLimit    int
-	dataStore       *data.DataStore
-	skipCheck       map[string]void
+	tokenProvider   		graph.TokenProvider
+	clusterType     		string
+	azureResourceId 		string
+	armCallLimit    		int
+	dataStore       		authz.Store
+	skipCheck       		map[string]void
+	retrieveGroupMemberships 	bool
 }
 
-func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterType, resourceId string, armCallLimit int, dataStore *data.DataStore, skipList []string) (*AccessInfo, error) {
+func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterType, resourceId string, armCallLimit int, dataStore authz.Store, skipList []string, retrieveGroupMemberships bool) (*AccessInfo, error) {
 	u := &AccessInfo{
 		client: http.DefaultClient,
 		headers: http.Header{
@@ -70,7 +72,9 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterT
 		apiURL:          rbacURL,
 		tokenProvider:   tokenProvider,
 		azureResourceId: resourceId,
-		armCallLimit:    armCallLimit}
+		armCallLimit:    armCallLimit,
+		dataStore:	 dataStore,
+		retrieveGroupMemberships: retrieveGroupMemberships}
 
 	u.skipCheck = make(map[string]void, len(skipList))
 	var member void
@@ -89,7 +93,7 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterT
 	return u, nil
 }
 
-func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore *data.DataStore, skipCheck []string) (*AccessInfo, error) {
+func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore authz.Store, skipCheck []string, retrieveGroupMemberships bool) (*AccessInfo, error) {
 	rbacURL, err := url.Parse(armEndPoint)
 
 	if err != nil {
@@ -100,11 +104,11 @@ func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType
 		fmt.Sprintf("%s%s/oauth2/v2.0/token", aadEndpoint, tenantID),
 		fmt.Sprintf("%s.default", armEndPoint))
 
-	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore, skipCheck)
+	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore, skipCheck, retrieveGroupMemberships)
 }
 
 
-func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string, armCallLimit int) (*AccessInfo, error) {
+func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore authz.Store, skipCheck []string, retrieveGroupMemberships bool) (*AccessInfo, error) {
 	rbacURL, err := url.Parse(armEndPoint)
 
 	if err != nil {
@@ -112,7 +116,7 @@ func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string,
 	}
 	tokenProvider := graph.NewAKSTokenProvider(tokenURL, tenantID)
 
-	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore, []string{""})
+	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore, skipCheck, retrieveGroupMemberships)
 }
 
 func (a *AccessInfo) RefreshToken() error {
@@ -161,7 +165,7 @@ func (a *AccessInfo) SetResultInCache(request *authzv1.SubjectAccessReviewSpec, 
 }
 
 func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*authzv1.SubjectAccessReviewStatus, error) {
-	checkAccessBody, err := prepareCheckAccessRequestBody(request, a.clusterType, a.azureResourceId)
+	checkAccessBody, err := prepareCheckAccessRequestBody(request, a.clusterType, a.azureResourceId, a.retrieveGroupMemberships)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "error in preparing check access request")

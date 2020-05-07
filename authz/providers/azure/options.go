@@ -32,11 +32,12 @@ const (
 )
 
 type Options struct {
-	AuthzMode      string
-	ResourceId     string
-	AKSAuthzURL    string
-	ARMCallLimit   int
-	SkipAuthzCheck []string
+	AuthzMode      			string
+	ResourceId     			string
+	AKSAuthzURL    			string
+	ARMCallLimit   			int
+	SkipAuthzCheck 			[]string
+	AuthzResolveGroupMemberships   	bool
 }
 
 func NewOptions() Options {
@@ -49,6 +50,7 @@ func (o *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.AKSAuthzURL, "azure.aks-authz-url", "", "url to call for AKS Authz flow")
 	fs.IntVar(&o.ARMCallLimit, "azure.arm-call-limit", defaultArmCallLimit, "No of calls before which webhook switch to new ARM instance to avoid throttling")
 	fs.StringSliceVar(&o.SkipAuthzCheck, "azure.skip-authz-check", []string{""}, "name of usernames/email for which authz check will be skipped")
+	fs.BoolVar(&o.AuthzResolveGroupMemberships, "azure.authz-resolve-group-memberships", o.AuthzResolveGroupMemberships, "set to true to resolve group membership by authorizer. Setting to false will use group list from subjectaccessreview request") 
 }
 
 func (o *Options) Validate(azure azure.Options) []error {
@@ -109,6 +111,8 @@ func (o Options) Apply(d *apps.Deployment) (extraObjs []runtime.Object, err erro
 	if len(o.SkipAuthzCheck) > 0 {
 		args = append(args, fmt.Sprintf("--azure.skip-authz-check=%s", strings.Join(o.SkipAuthzCheck, ",")))
 	}
+
+	args = append(args, fmt.Sprintf("--azure.authz-resolve-group-memberships=%t", o.AuthzResolveGroupMemberships))
 
 	container.Args = args
 	d.Spec.Template.Spec.Containers[0] = container

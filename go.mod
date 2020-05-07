@@ -42,8 +42,8 @@ require (
 	gopkg.in/jcmturner/goidentity.v1 v1.0.0 // indirect
 	gopkg.in/jcmturner/gokrb5.v4 v4.1.2
 	gopkg.in/square/go-jose.v2 v2.2.2
-	k8s.io/api v0.17.3
-	k8s.io/apimachinery v0.17.3
+	k8s.io/api v0.18.1
+	k8s.io/apimachinery v0.18.1
 	k8s.io/client-go v12.0.0+incompatible
 	kmodules.xyz/client-go v0.0.0-20200125212626-a094b2ba24c6
 )
@@ -68,6 +68,7 @@ replace (
 	github.com/appscode/guard/authz/providers => ./authz/providers
 	github.com/appscode/guard/authz/providers/azure => ./authz/providers/azure
 	github.com/appscode/guard/authz/providers/azure/data => ./authz/providers/azure/data
+	github.com/appscode/guard/authz/providers/azure/rbac => ./authz/providers/azure/rbac
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.2
 	google.golang.org/api => google.golang.org/api v0.6.1-0.20190607001116-5213b8090861
 	k8s.io/api => k8s.io/api v0.0.0-20191114100352-16d7abae0d2a

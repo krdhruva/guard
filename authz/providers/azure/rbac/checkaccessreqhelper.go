@@ -33,8 +33,9 @@ const (
 )
 
 type SubjectInfoAttributes struct {
-	ObjectId string   `json:"ObjectId"`
-	Groups   []string `json:"Groups"`
+	ObjectId 			string   `json:"ObjectId"`
+	Groups   			[]string `json:"Groups"`
+	RetrieveGroupMemberships 	bool     `json:"xms-pasrp-retrievegroupmemberships"`
 }
 
 type SubjectInfo struct {
@@ -217,7 +218,7 @@ func getResultCacheKey(subRevReq *authzv1.SubjectAccessReviewSpec) string {
 	return cacheKey
 }
 
-func prepareCheckAccessRequestBody(req *authzv1.SubjectAccessReviewSpec, clusterType, resourceId string) (*CheckAccessRequest, error) {
+func prepareCheckAccessRequestBody(req *authzv1.SubjectAccessReviewSpec, clusterType, resourceId string, retrieveGroupMemberships bool) (*CheckAccessRequest, error) {
 	/* This is how sample SubjectAccessReview request will look like
 	{
     	"kind": "SubjectAccessReview",
@@ -280,9 +281,12 @@ func prepareCheckAccessRequestBody(req *authzv1.SubjectAccessReviewSpec, cluster
 		return nil, errors.New("oid info sent from authentication module is not valid")
 	}
 
-	groups := getValidSecurityGroups(req.Groups)
-	checkaccessreq.Subject.Attributes.Groups = groups
+	if !retrieveGroupMemberships {
+		groups := getValidSecurityGroups(req.Groups)
+		checkaccessreq.Subject.Attributes.Groups = groups
+	}
 
+	checkaccessreq.Subject.Attributes.RetrieveGroupMemberships = retrieveGroupMemberships
 	action := make([]AuthorizationActionInfo, 1)
 	action[0] = getDataAction(req, clusterType)
 	checkaccessreq.Actions = action

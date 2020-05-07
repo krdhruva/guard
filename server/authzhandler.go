@@ -21,7 +21,6 @@ import (
 
 	"github.com/appscode/guard/authz"
 	"github.com/appscode/guard/authz/providers/azure"
-	"github.com/appscode/guard/authz/providers/azure/data"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	authzv1 "k8s.io/api/authorization/v1"
@@ -30,7 +29,7 @@ import (
 type Authzhandler struct {
 	AuthRecommendedOptions  *AuthRecommendedOptions
 	AuthzRecommendedOptions *AuthzRecommendedOptions
-	Store                   *authz.Store
+	Store                   authz.Store
 }
 
 func (s *Authzhandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
