@@ -25,9 +25,11 @@ import (
 )
 
 func NewCmdRun() *cobra.Command {
-	o := server.NewRecommendedOptions()
+	o := server.NewAuthRecommendedOptions()
+	ao := server.NewAuthzRecommendedOptions()
 	srv := server.Server{
-		RecommendedOptions: o,
+		AuthRecommendedOptions:  o,
+		AuthzRecommendedOptions: ao,
 	}
 	cmd := &cobra.Command{
 		Use:               "run",
@@ -37,7 +39,7 @@ func NewCmdRun() *cobra.Command {
 			cli.SendPeriodicAnalytics(c, v.Version.Version)
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			if !srv.RecommendedOptions.SecureServing.UseTLS() {
+			if !srv.AuthRecommendedOptions.SecureServing.UseTLS() {
 				glog.Fatalln("Guard server must use SSL.")
 			}
 			srv.ListenAndServe()

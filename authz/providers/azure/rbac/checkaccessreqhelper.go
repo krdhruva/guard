@@ -27,14 +27,14 @@ import (
 )
 
 const (
-	accessAllowed     = "allowed"
-	notAllowedVerdict = "user does not have access to the resource"
+	AccessAllowed     = "allowed"
+	NotAllowedVerdict = "user does not have access to the resource"
 	namespaces        = "namespaces"
 )
 
 type SubjectInfoAttributes struct {
 	ObjectId string   `json:"ObjectId"`
-	Groups   []string `json:"Groups,omitempty"`
+	Groups   []string `json:"Groups"`
 }
 
 type SubjectInfo struct {
@@ -61,48 +61,52 @@ type AccessDecision struct {
 }
 
 type RoleAssignment struct {
-	Id               string `json:"Id"`
-	RoleDefinitionId string `json:"RoleDefinitionId"`
-	PrincipalId      string `json:"PrincipalId"`
-	PrincipalType    string `json:"PrincipalType"`
-	Scope            string `json:"Scope"`
-	Condition        string `json:"Condition"`
-	ConditionVersion string `json:"ConditionVersion"`
-	CanDelegate      bool   `json:"CanDelegate"`
+	Id               string `json:"id"`
+	RoleDefinitionId string `json:"roleDefinitionId"`
+	PrincipalId      string `json:"principalId"`
+	PrincipalType    string `json:"principalType"`
+	Scope            string `json:"scope"`
+	Condition        string `json:"condition"`
+	ConditionVersion string `json:"conditionVersion"`
+	CanDelegate      bool   `json:"canDelegate"`
 }
 
 type AzureRoleAssignment struct {
-	DelegatedManagedIdentityResourceId string `json:"DelegatedManagedIdentityResourceId"`
+	DelegatedManagedIdentityResourceId string `json:"delegatedManagedIdentityResourceId"`
 	RoleAssignment
 }
 
 type Permission struct {
-	Actions       []string `json:"actions,omitempty"`
-	NoActions     []string `json:"noactions,omitempty"`
-	DataActions   []string `json:"dataactions,omitempty"`
-	NoDataActions []string `json:"nodataactions,omitempty"`
+	Actions          []string `json:"actions,omitempty"`
+	NoActions        []string `json:"noactions,omitempty"`
+	DataActions      []string `json:"dataactions,omitempty"`
+	NoDataActions    []string `json:"nodataactions,omitempty"`
+	Condition        string   `json:"condition"`
+	ConditionVersion string   `json:"conditionVersion"`
 }
 
 type Principal struct {
-	Id   string `json:"Id"`
-	Type string `json:"Type"`
+	Id   string `json:"id"`
+	Type string `json:"type"`
 }
 
 type DenyAssignment struct {
-	Id          string `json:"Id"`
-	Name        string `json:"Name"`
-	Description string `json:"Description"`
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
 	Permission
-	Scope                   string `json:"Scope"`
-	DoNotApplyToChildScopes bool   `json:"DoNotApplyToChildScopes"`
+	Scope                   string `json:"scope"`
+	DoNotApplyToChildScopes bool   `json:"doNotApplyToChildScopes"`
 	principals              []Principal
 	excludeprincipals       []Principal
-	Condition               string `json:"Condition"`
-	ConditionVersion        string `json:"ConditionVersion"`
+	Condition               string `json:"condition"`
+	ConditionVersion        string `json:"conditionVersion"`
 }
 
 type AzureDenyAssignment struct {
-	IsSystemProtected string `json:"IsSystemProtected"`
+	MetaData          map[string]interface{} `json:"metadata"`
+	IsSystemProtected string                 `json:"isSystemProtected"`
+	IsBuiltIn         bool                   `json:isBuiltIn`
 	DenyAssignment
 }
 
@@ -115,21 +119,9 @@ type AuthorizationDecision struct {
 	TimeToLiveInMs      int                 `json:"timeToLiveInMs"`
 }
 
-// this will be removed once caching is implemented
-func getUserId(userName string) string {
-	switch userName {
-	case "krdhruva@microsoft.com":
-		return "63e8a863-9ae9-4f3c-b0b7-fd9df05c712e"
-	case "test@KDOrg.onmicrosoft.com":
-		return "62103f2e-051d-48cc-af47-b1ff3deec630"
-	default:
-		return "62103f2e-051d-48cc-af47-b1ff3deec630"
-	}
-}
-
 func getScope(resourceId string, attr *authzv1.ResourceAttributes) string {
 	if attr != nil && attr.Namespace != "" {
-		return path.Join(resourceId + namespaces + attr.Namespace)
+		return path.Join(resourceId, namespaces, attr.Namespace)
 	}
 	return resourceId
 }
@@ -150,6 +142,14 @@ func getValidSecurityGroups(groups []string) []string {
 }
 
 func getActionName(verb string) string {
+	/* special verbs
+	use verb on podsecuritypolicies resources in the policy API group
+	bind and escalate verbs on roles and clusterroles resources in the rbac.authorization.k8s.io API group
+	impersonate verb on users, groups, and serviceaccounts in the core API group
+	userextras in the authentication.k8s.io API group
+
+	https://kubernetes.io/docs/reference/access-authn-authz/authorization/#determine-the-request-verb
+	*/
 	switch verb {
 	case "get":
 		fallthrough
@@ -157,11 +157,26 @@ func getActionName(verb string) string {
 		fallthrough
 	case "watch":
 		return "read"
-	case "create":
+
+	case "bind":
+		fallthrough
+	case "escalate":
+		fallthrough
+	case "use":
+		fallthrough
+	case "impersonate":
 		return "action"
+
+	case "create":
+		fallthrough //instead of action create will be mapped to write
+	case "patch":
+		fallthrough
 	case "update":
 		return "write"
+
 	case "delete":
+		fallthrough
+	case "deletecollection": // TODO: verify scenario
 		return "delete"
 	default:
 		return ""
@@ -184,21 +199,50 @@ func getDataAction(subRevReq *authzv1.SubjectAccessReviewSpec, clusterType strin
 	return authInfo
 }
 
-func PrepareCheckAccessRequest(req *authzv1.SubjectAccessReviewSpec, clusterType, resourceId string) *CheckAccessRequest {
-	checkaccessreq := CheckAccessRequest{}
-	checkaccessreq.Subject.Attributes.ObjectId = getUserId(req.User)
+func getResultCacheKey(subRevReq *authzv1.SubjectAccessReviewSpec) string {
+	cacheKey := subRevReq.User
 
-	if len(req.Groups) > 0 {
-		groups := getValidSecurityGroups(req.Groups)
-		checkaccessreq.Subject.Attributes.Groups = groups
+	if subRevReq.ResourceAttributes != nil {
+		if subRevReq.ResourceAttributes.Namespace != "" {
+			cacheKey = path.Join(cacheKey, subRevReq.ResourceAttributes.Namespace)
+		}
+		if subRevReq.ResourceAttributes.Group != "" {
+			cacheKey = path.Join(cacheKey, subRevReq.ResourceAttributes.Group)
+		}
+		cacheKey = path.Join(cacheKey, subRevReq.ResourceAttributes.Resource, getActionName(subRevReq.ResourceAttributes.Verb))
+	} else if subRevReq.NonResourceAttributes != nil {
+		cacheKey = path.Join(cacheKey, subRevReq.NonResourceAttributes.Path, getActionName(subRevReq.NonResourceAttributes.Verb))
 	}
+
+	return cacheKey
+}
+
+func prepareCheckAccessRequestBody(req *authzv1.SubjectAccessReviewSpec, clusterType, resourceId string) (*CheckAccessRequest, error) {
+	checkaccessreq := CheckAccessRequest{}
+
+	var userOid string
+	if oid, ok := req.Extra["oid"]; ok {
+		val := oid.String()
+		userOid = val[1 : len(val)-1]
+	} else {
+		return nil, errors.New("oid info not sent from authentication module")
+	}
+
+	if isValidUUID(userOid) {
+		checkaccessreq.Subject.Attributes.ObjectId = userOid
+	} else {
+		return nil, errors.New("oid info sent from authentication module is not valid")
+	}
+
+	groups := getValidSecurityGroups(req.Groups)
+	checkaccessreq.Subject.Attributes.Groups = groups
 
 	action := make([]AuthorizationActionInfo, 1)
 	action[0] = getDataAction(req, clusterType)
 	checkaccessreq.Actions = action
 	checkaccessreq.Resource.Id = getScope(resourceId, req.ResourceAttributes)
 
-	return &checkaccessreq
+	return &checkaccessreq, nil
 }
 
 func getNameSpaceScope(req *authzv1.SubjectAccessReviewSpec) (bool, string) {
@@ -212,14 +256,14 @@ func getNameSpaceScope(req *authzv1.SubjectAccessReviewSpec) (bool, string) {
 
 func ConvertCheckAccessResponse(body []byte) (*authzv1.SubjectAccessReviewStatus, error) {
 	var (
-		response AuthorizationDecision
+		response []AuthorizationDecision
 		allowed  bool
 		denied   bool
 		verdict  string
 	)
 	err := json.Unmarshal(body, &response)
 	if err != nil {
-		glog.V(10).Infoln("Failed to parse checkacccess response. Error:%s", err.Error())
+		glog.V(10).Infof("Failed to parse checkacccess response. Error:%s", err.Error())
 		return nil, errors.Wrap(err, "Error in unmarshalling check access response.")
 	}
 
@@ -228,13 +272,13 @@ func ConvertCheckAccessResponse(body []byte) (*authzv1.SubjectAccessReviewStatus
 		glog.Infof("check access response:%s", binaryData)
 	}
 
-	if strings.ToLower(response.Decision) == accessAllowed {
+	if strings.ToLower(response[0].Decision) == AccessAllowed {
 		allowed = true
-		verdict = accessAllowed
+		verdict = AccessAllowed
 	} else {
 		allowed = false
 		denied = true
-		verdict = notAllowedVerdict
+		verdict = NotAllowedVerdict
 	}
 
 	return &authzv1.SubjectAccessReviewStatus{Allowed: allowed, Reason: verdict, Denied: denied}, nil

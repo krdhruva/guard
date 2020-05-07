@@ -24,6 +24,7 @@ import (
 	"net/url"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/appscode/guard/auth/providers/azure/graph"
@@ -43,6 +44,8 @@ const (
 	expiryDelta             = 60 * time.Second
 )
 
+type void struct{}
+
 // AccessInfo allows you to check user access from MS RBAC
 type AccessInfo struct {
 	headers   http.Header
@@ -56,9 +59,10 @@ type AccessInfo struct {
 	azureResourceId string
 	armCallLimit    int
 	dataStore       *data.DataStore
+	skipCheck       map[string]void
 }
 
-func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterType, resourceId string, armCallLimit int, dataStore *data.DataStore) (*AccessInfo, error) {
+func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterType, resourceId string, armCallLimit int, dataStore *data.DataStore, skipList []string) (*AccessInfo, error) {
 	u := &AccessInfo{
 		client: http.DefaultClient,
 		headers: http.Header{
@@ -69,6 +73,12 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterT
 		azureResourceId: resourceId,
 		armCallLimit:    armCallLimit,
 		dataStore:       dataStore}
+
+	u.skipCheck = make(map[string]void, len(skipList))
+	var member void
+	for _, s := range skipList {
+		u.skipCheck[strings.ToLower(s)] = member
+	}
 
 	if clsuterType == "arc" {
 		u.clusterType = connectedClusters
@@ -81,7 +91,7 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterT
 	return u, nil
 }
 
-func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore *data.DataStore) (*AccessInfo, error) {
+func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore *data.DataStore, skipCheck []string) (*AccessInfo, error) {
 	rbacURL, err := url.Parse(armEndPoint)
 
 	if err != nil {
@@ -92,7 +102,7 @@ func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType
 		fmt.Sprintf("%s%s/oauth2/v2.0/token", aadEndpoint, tenantID),
 		fmt.Sprintf("%s.default", armEndPoint))
 
-	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore)
+	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore, skipCheck)
 }
 
 func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore *data.DataStore) (*AccessInfo, error) {
@@ -103,7 +113,7 @@ func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string,
 	}
 	tokenProvider := graph.NewAKSTokenProvider(tokenURL, tenantID)
 
-	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore)
+	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore, []string{""})
 }
 
 func (a *AccessInfo) RefreshToken() error {
@@ -129,16 +139,35 @@ func (a *AccessInfo) IsTokenExpired() bool {
 	}
 }
 
-func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*authzv1.SubjectAccessReviewStatus, error) {
-	checkAccessBody := PrepareCheckAccessRequest(request, a.clusterType, a.azureResourceId)
+func (a *AccessInfo) GetResultFromCache(request *authzv1.SubjectAccessReviewSpec) (bool, bool) {
+	var result bool
+	key := getResultCacheKey(request)
+	glog.V(10).Infof("Cache search for key: %s", key)
+	found, _ := a.dataStore.Get(key, &result)
+	return found, result
+}
 
-	var useroid string
-	found, err := a.dataStore.Get(request.User, useroid)
-	if !found || err != nil {
-		return nil, errors.Wrap(err, "user does not exist in cache")
+func (a *AccessInfo) SkipAuthzCheck(request *authzv1.SubjectAccessReviewSpec) bool {
+	if a.clusterType == connectedClusters {
+		_, ok := a.skipCheck[strings.ToLower(request.User)]
+		return ok
+	}
+	return false
+}
+
+func (a *AccessInfo) SetResultInCache(request *authzv1.SubjectAccessReviewSpec, result bool) error {
+	key := getResultCacheKey(request)
+	glog.V(10).Infof("Cache set for key: %s, value: %t", key, result)
+	return a.dataStore.Set(key, result)
+}
+
+func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*authzv1.SubjectAccessReviewStatus, error) {
+	checkAccessBody, err := prepareCheckAccessRequestBody(request, a.clusterType, a.azureResourceId)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "error in preparing check access request")
 	}
 
-	glog.V(10).Infof("checkAccess cache user %s", useroid)
 	checkAccessURL := *a.apiURL
 	// Append the path for azure cluster resource id
 	checkAccessURL.Path = path.Join(checkAccessURL.Path, a.azureResourceId)
@@ -151,10 +180,6 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	params := url.Values{}
 	params.Add("api-version", checkAccessAPIVersion)
 	checkAccessURL.RawQuery = params.Encode()
-
-	if a.IsTokenExpired() {
-		a.RefreshToken()
-	}
 
 	buf := new(bytes.Buffer)
 	if err := json.NewEncoder(buf).Encode(checkAccessBody); err != nil {
@@ -189,14 +214,15 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 		return nil, errors.Wrap(err, "error in reading response body")
 	}
 
+	glog.V(10).Infof("checkaccess response: %s", string(data))
 	defer resp.Body.Close()
-	glog.V(10).Infof("Configured ARM instance: %d", a.armCallLimit)
+	glog.V(10).Infof("Configured ARM call limit: %d", a.armCallLimit)
 	if resp.StatusCode != http.StatusOK {
-		glog.Errorf("error in check access response. error code: %d, response: %s", resp.StatusCode, data)
+		glog.Errorf("error in check access response. error code: %d, response: %s", resp.StatusCode, string(data))
 		if resp.StatusCode == http.StatusTooManyRequests {
 			glog.V(10).Infoln("Moving to another ARM instance!")
 			a.client.CloseIdleConnections()
-			// add prom metrics for this scenario
+			// TODO: add prom metrics for this scenario
 		}
 		return nil, errors.Errorf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
 	} else {
@@ -215,5 +241,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	}
 
 	// Decode response and prepare k8s response
-	return ConvertCheckAccessResponse(data)
+	response, err := ConvertCheckAccessResponse(data)
+	a.SetResultInCache(request, response.Allowed)
+	return response, err
 }

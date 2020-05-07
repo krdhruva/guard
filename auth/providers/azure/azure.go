@@ -24,7 +24,6 @@ import (
 
 	"github.com/appscode/guard/auth"
 	"github.com/appscode/guard/auth/providers/azure/graph"
-	"github.com/appscode/guard/authz/providers/azure/data"
 
 	"github.com/Azure/go-autorest/autorest/azure"
 	oidc "github.com/coreos/go-oidc"
@@ -67,7 +66,6 @@ type Authenticator struct {
 	graphClient *graph.UserInfo
 	verifier    *oidc.IDTokenVerifier
 	ctx         context.Context
-	dataStore 	*data.DataStore
 }
 
 type authInfo struct {
@@ -76,11 +74,10 @@ type authInfo struct {
 	Issuer      string
 }
 
-func New(opts Options, dataStore *data.DataStore) (auth.Interface, error) {
+func New(opts Options) (auth.Interface, error) {
 	c := &Authenticator{
 		Options: opts,
 		ctx:     context.Background(),
-		dataStore: dataStore,
 	}
 	authInfoVal, err := getAuthInfo(c.Environment, c.TenantID, getMetadata)
 	if err != nil {
@@ -162,18 +159,6 @@ func (s Authenticator) Check(token string) (*authv1.UserInfo, error) {
 	resp, err := claims.getUserInfo(azureUsernameClaim, azureObjectIDClaim)
 	if err != nil {
 		return nil, err
-	}
-
-	if s.dataStore != nil {
-		userName, userObjectId := claims.getUserNameObjectId()
-		glog.V(10).Infof("userName: %s, objectId:%s", userName, userObjectId)
-		if userName != "" && userObjectId != "" {
-			// in case of no eviction, oldest entry will be evicted if cache is full
-			s.dataStore.Set(userName, userObjectId)
-		}
-
-	} else {
-		glog.V(10).Infoln("cache is nil, skipping adding user details to cache")
 	}
 
 	if s.Options.ResolveGroupMembershipOnlyOnOverageClaim {
@@ -285,16 +270,6 @@ func getClaims(token *oidc.IDToken) (claims, error) {
 	return c, nil
 }
 
-func (c claims) getUserNameObjectId() (string, string) {
-	var (
-		userName string
-		userObjectId string
-	)
-	userName, _ = c.string(azureUsernameClaim)
-	userObjectId, _ = c.string(azureObjectIDClaim)
-	return userName, userObjectId
-}
-
 // ReviewFromClaims creates a new TokenReview object from the claims object
 // the claims object
 func (c claims) getUserInfo(usernameClaim, userObjectIDClaim string) (*authv1.UserInfo, error) {
@@ -309,7 +284,11 @@ func (c claims) getUserInfo(usernameClaim, userObjectIDClaim string) (*authv1.Us
 		return nil, errors.Wrap(err, "unable to get username claim")
 	}
 
-	return &authv1.UserInfo{Username: username}, nil
+	useroid, _ := c.string(userObjectIDClaim)
+
+	return &authv1.UserInfo{
+		Username: username,
+		Extra:    map[string]authv1.ExtraValue{"oid": {useroid}}}, nil
 }
 
 // String gets a string value from claims given a key. Returns error if

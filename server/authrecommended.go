@@ -23,12 +23,11 @@ import (
 	"github.com/appscode/guard/auth/providers/google"
 	"github.com/appscode/guard/auth/providers/ldap"
 	"github.com/appscode/guard/auth/providers/token"
-	authz "github.com/appscode/guard/authz/providers"
 
 	"github.com/spf13/pflag"
 )
 
-type RecommendedOptions struct {
+type AuthRecommendedOptions struct {
 	SecureServing SecureServingOptions
 	NTP           NTPOptions
 	Github        github.Options
@@ -38,11 +37,10 @@ type RecommendedOptions struct {
 	Azure         azure.Options
 	LDAP          ldap.Options
 	AuthProvider  providers.AuthProviders
-	AuthzProvider authz.AuthzProviders
 }
 
-func NewRecommendedOptions() *RecommendedOptions {
-	return &RecommendedOptions{
+func NewAuthRecommendedOptions() *AuthRecommendedOptions {
+	return &AuthRecommendedOptions{
 		SecureServing: NewSecureServingOptions(),
 		NTP:           NewNTPOptions(),
 		Github:        github.NewOptions(),
@@ -54,7 +52,7 @@ func NewRecommendedOptions() *RecommendedOptions {
 	}
 }
 
-func (o *RecommendedOptions) AddFlags(fs *pflag.FlagSet) {
+func (o *AuthRecommendedOptions) AddFlags(fs *pflag.FlagSet) {
 	o.SecureServing.AddFlags(fs)
 	o.NTP.AddFlags(fs)
 	o.AuthProvider.AddFlags(fs)
@@ -64,15 +62,13 @@ func (o *RecommendedOptions) AddFlags(fs *pflag.FlagSet) {
 	o.Google.AddFlags(fs)
 	o.Azure.AddFlags(fs)
 	o.LDAP.AddFlags(fs)
-	o.AuthzProvider.AddFlags(fs)
 }
 
-func (o *RecommendedOptions) Validate() []error {
+func (o *AuthRecommendedOptions) Validate() []error {
 	var errs []error
 	errs = append(errs, o.SecureServing.Validate()...)
 	errs = append(errs, o.NTP.Validate()...)
 	errs = append(errs, o.AuthProvider.Validate()...)
-	errs = append(errs, o.AuthzProvider.Validate()...)
 
 	if o.AuthProvider.Has(github.OrgType) {
 		errs = append(errs, o.Github.Validate()...)
