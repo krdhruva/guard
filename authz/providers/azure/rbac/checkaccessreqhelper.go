@@ -34,7 +34,7 @@ const (
 
 type SubjectInfoAttributes struct {
 	ObjectId 			string   `json:"ObjectId"`
-	Groups   			[]string `json:"Groups"`
+	Groups   			[]string `json:"Groups,omitempty"`
 	RetrieveGroupMemberships 	bool     `json:"xms-pasrp-retrievegroupmemberships"`
 }
 
