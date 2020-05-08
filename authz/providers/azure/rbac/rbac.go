@@ -244,7 +244,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 
 	// Decode response and prepare k8s response
 	response, err := ConvertCheckAccessResponse(data)
-	if err != nil {
+	if err == nil {
 		a.SetResultInCache(request, response.Allowed)
 	} else {
 		a.SetResultInCache(request, false)
