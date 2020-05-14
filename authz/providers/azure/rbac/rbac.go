@@ -233,7 +233,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 		count, _ := strconv.Atoi(remaining)
 		if count < a.armCallLimit {
 			if glog.V(10) {
-				glog.V(10).Infoln("Moving to another ARM instance!")
+				glog.V(10).Infoln("Closing idle TCP connections.")
 			}
 			// Usually ARM connections are cached by destinatio ip and port
 			// By closing the idle connection, a new request will use different port which
