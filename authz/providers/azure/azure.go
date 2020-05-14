@@ -76,7 +76,15 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 		return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "no opinion"}, nil
 	}
 
-	// TODO: handle AKS glass break
+	if _, ok := request.Extra["oid"]; !ok {
+		if s.rbacClient.ShouldSkipAuthzCheckForNonAADUsers() {
+			glog.V(3).Infof("oid info is not available for user %s. SkipAuthzCheck enabled for AAD users.", request.User)
+			return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "no opinion"}, nil
+		} else {
+			glog.V(3).Infof("user %s is part of skip authz list. returning no op.", request.User)
+			return &authzv1.SubjectAccessReviewStatus{Allowed: false, Denied: true, Reason: rbac.NotAllowedForNonAADUsers}, nil
+		}
+	}
 
 	if s.rbacClient.SkipAuthzCheck(request) {
 		glog.V(3).Infof("user %s is part of skip authz list. returning no op.", request.User)

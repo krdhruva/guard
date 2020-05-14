@@ -27,15 +27,16 @@ import (
 )
 
 const (
-	AccessAllowed     = "allowed"
-	NotAllowedVerdict = "user does not have access to the resource"
-	namespaces        = "namespaces"
+	AccessAllowed            = "allowed"
+	NotAllowedVerdict        = "user does not have access to the resource"
+	namespaces               = "namespaces"
+	NotAllowedForNonAADUsers = "Invalid user info. UPN missing."
 )
 
 type SubjectInfoAttributes struct {
-	ObjectId 			string   `json:"ObjectId"`
-	Groups   			[]string `json:"Groups,omitempty"`
-	RetrieveGroupMemberships 	bool     `json:"xms-pasrp-retrievegroupmemberships"`
+	ObjectId                 string   `json:"ObjectId"`
+	Groups                   []string `json:"Groups,omitempty"`
+	RetrieveGroupMemberships bool     `json:"xms-pasrp-retrievegroupmemberships"`
 }
 
 type SubjectInfo struct {
@@ -220,52 +221,52 @@ func getResultCacheKey(subRevReq *authzv1.SubjectAccessReviewSpec) string {
 
 func prepareCheckAccessRequestBody(req *authzv1.SubjectAccessReviewSpec, clusterType, resourceId string, retrieveGroupMemberships bool) (*CheckAccessRequest, error) {
 	/* This is how sample SubjectAccessReview request will look like
-	{
-    	"kind": "SubjectAccessReview",
-    	"apiVersion": "authorization.k8s.io/v1beta1",
-    	"metadata": {
-        	"creationTimestamp": null
-    	},
-    	"spec": {
-        	"resourceAttributes": {
-            	"namespace": "default",
-            	"verb": "get",
-				"group": "extensions",
-				"version": "v1beta1",
-				"resource": "deployments",
-				"name": "obo-deploy"
-        	},
-			"user": "user@contoso.com",
-			"extra": {
-				"oid": [
-    				"62103f2e-051d-48cc-af47-b1ff3deec630"
-				]
-        	}
-    	},
-    	"status": {
-        	"allowed": false
-    	}
-	}
-
-	For check access it will be converted into following request for arc cluster:
-	{
-		"Subject": {
-			"Attributes": {
-				"ObjectId": "62103f2e-051d-48cc-af47-b1ff3deec630",
-				"xms-pasrp-retrievegroupmemberships": true
-			}
-		},
-		"Actions": [
-			{
-				"Id": "Microsoft.Kubernetes/connectedClusters/extensions/deployments/read",
-				"IsDataAction": true
-			}
-		],
-		"Resource": {
-			"Id": "<resourceId>/namespaces/<namespace name>"
+		{
+	    	"kind": "SubjectAccessReview",
+	    	"apiVersion": "authorization.k8s.io/v1beta1",
+	    	"metadata": {
+	        	"creationTimestamp": null
+	    	},
+	    	"spec": {
+	        	"resourceAttributes": {
+	            	"namespace": "default",
+	            	"verb": "get",
+					"group": "extensions",
+					"version": "v1beta1",
+					"resource": "deployments",
+					"name": "obo-deploy"
+	        	},
+				"user": "user@contoso.com",
+				"extra": {
+					"oid": [
+	    				"62103f2e-051d-48cc-af47-b1ff3deec630"
+					]
+	        	}
+	    	},
+	    	"status": {
+	        	"allowed": false
+	    	}
 		}
-	}
-*/
+
+		For check access it will be converted into following request for arc cluster:
+		{
+			"Subject": {
+				"Attributes": {
+					"ObjectId": "62103f2e-051d-48cc-af47-b1ff3deec630",
+					"xms-pasrp-retrievegroupmemberships": true
+				}
+			},
+			"Actions": [
+				{
+					"Id": "Microsoft.Kubernetes/connectedClusters/extensions/deployments/read",
+					"IsDataAction": true
+				}
+			],
+			"Resource": {
+				"Id": "<resourceId>/namespaces/<namespace name>"
+			}
+		}
+	*/
 	checkaccessreq := CheckAccessRequest{}
 	var userOid string
 	if oid, ok := req.Extra["oid"]; ok {

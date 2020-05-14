@@ -32,12 +32,13 @@ const (
 )
 
 type Options struct {
-	AuthzMode      			string
-	ResourceId     			string
-	AKSAuthzURL    			string
-	ARMCallLimit   			int
-	SkipAuthzCheck 			[]string
-	AuthzResolveGroupMemberships   	bool
+	AuthzMode                    string
+	ResourceId                   string
+	AKSAuthzURL                  string
+	ARMCallLimit                 int
+	SkipAuthzCheck               []string
+	AuthzResolveGroupMemberships bool
+	SkipAuthzForNonAADUsers      bool
 }
 
 func NewOptions() Options {
@@ -50,7 +51,8 @@ func (o *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.AKSAuthzURL, "azure.aks-authz-url", "", "url to call for AKS Authz flow")
 	fs.IntVar(&o.ARMCallLimit, "azure.arm-call-limit", defaultArmCallLimit, "No of calls before which webhook switch to new ARM instance to avoid throttling")
 	fs.StringSliceVar(&o.SkipAuthzCheck, "azure.skip-authz-check", []string{""}, "name of usernames/email for which authz check will be skipped")
-	fs.BoolVar(&o.AuthzResolveGroupMemberships, "azure.authz-resolve-group-memberships", o.AuthzResolveGroupMemberships, "set to true to resolve group membership by authorizer. Setting to false will use group list from subjectaccessreview request") 
+	fs.BoolVar(&o.AuthzResolveGroupMemberships, "azure.authz-resolve-group-memberships", o.AuthzResolveGroupMemberships, "set to true to resolve group membership by authorizer. Setting to false will use group list from subjectaccessreview request")
+	fs.BoolVar(&o.SkipAuthzForNonAADUsers, "azure.skip-authz-for-non-aad-users", o.SkipAuthzForNonAADUsers, "skip authz for non AAD users")
 }
 
 func (o *Options) Validate(azure azure.Options) []error {
@@ -113,6 +115,8 @@ func (o Options) Apply(d *apps.Deployment) (extraObjs []runtime.Object, err erro
 	}
 
 	args = append(args, fmt.Sprintf("--azure.authz-resolve-group-memberships=%t", o.AuthzResolveGroupMemberships))
+
+	args = append(args, fmt.Sprintf("--azure.skip-authz-for-non-aad-users=%t", o.SkipAuthzForNonAADUsers))
 
 	container.Args = args
 	d.Spec.Template.Spec.Containers[0] = container
