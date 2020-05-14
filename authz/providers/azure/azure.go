@@ -54,9 +54,9 @@ func New(opts Options, authopts auth.Options, dataStore authz.Store) (authz.Inte
 
 	switch opts.AuthzMode {
 	case ARCAuthzMode:
-		c.rbacClient, err = rbac.New(authopts.ClientID, authopts.ClientSecret, authopts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore, opts.SkipAuthzCheck, opts.AuthzResolveGroupMemberships)
+		c.rbacClient, err = rbac.New(authopts.ClientID, authopts.ClientSecret, authopts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore, opts.SkipAuthzCheck, opts.AuthzResolveGroupMemberships, opts.SkipAuthzForNonAADUsers)
 	case AKSAuthzMode:
-		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, authopts.TenantID, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore, opts.SkipAuthzCheck, opts.AuthzResolveGroupMemberships)
+		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, authopts.TenantID, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore, opts.SkipAuthzCheck, opts.AuthzResolveGroupMemberships, opts.SkipAuthzForNonAADUsers)
 	}
 
 	if err != nil {
