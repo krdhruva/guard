@@ -27,11 +27,12 @@ import (
 )
 
 const (
-	AccessAllowed            = "Access allowed"
-	NotAllowedVerdict        = "User does not have access to the resource in Azure. Update role assignment to allow access."
+	AccessAllowedVerdict     = "Access allowed"
+	Allowed                  = "Allowed"
+	AccessNotAllowedVerdict  = "User does not have access to the resource in Azure. Update role assignment to allow access."
 	namespaces               = "namespaces"
 	NotAllowedForNonAADUsers = "Access denied by Azure RBAC for non AAD users. Configure --azure.skip-authz-for-non-aad-users to enable access."
-	NoOpinion                = "Azure does not have opinion for this user or resource."
+	NoOpinionVerdict         = "Azure does not have opinion for this user."
 )
 
 type SubjectInfoAttributes struct {
@@ -324,13 +325,13 @@ func ConvertCheckAccessResponse(body []byte) (*authzv1.SubjectAccessReviewStatus
 		glog.Infof("check access response:%s", binaryData)
 	}
 
-	if strings.ToLower(response[0].Decision) == AccessAllowed {
+	if strings.ToLower(response[0].Decision) == Allowed {
 		allowed = true
-		verdict = AccessAllowed
+		verdict = AccessAllowedVerdict
 	} else {
 		allowed = false
 		denied = true
-		verdict = NotAllowedVerdict
+		verdict = AccessNotAllowedVerdict
 	}
 
 	return &authzv1.SubjectAccessReviewStatus{Allowed: allowed, Reason: verdict, Denied: denied}, nil

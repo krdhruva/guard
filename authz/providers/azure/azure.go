@@ -73,32 +73,32 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 	// check if user is service account
 	if strings.HasPrefix(strings.ToLower(request.User), "system") {
 		glog.V(3).Infof("returning no op to service accounts")
-		return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "no opinion"}, nil
+		return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: rbac.NoOpinionVerdict}, nil
 	}
 
 	if _, ok := request.Extra["oid"]; !ok {
 		if s.rbacClient.ShouldSkipAuthzCheckForNonAADUsers() {
-			glog.V(3).Infof("Skip RBAC is set for non AAD users. Returning no opinion for user %s.", request.User)
-			return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: rbac.NoOpinion}, nil
+			glog.V(3).Infof("Skip RBAC is set for non AAD users. Returning no opinion for user %s. You may observe this for AAD users for 'can-i' requests.", request.User)
+			return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: rbac.NoOpinionVerdict}, nil
 		} else {
-			glog.V(3).Infof("Skip RBAC for non AAD user is not set. Returning deny access for non AAD user %s.", request.User)
+			glog.V(3).Infof("Skip RBAC for non AAD user is not set. Returning deny access for non AAD user %s. You may observe this for AAD users for 'can-i' requests.", request.User)
 			return &authzv1.SubjectAccessReviewStatus{Allowed: false, Denied: true, Reason: rbac.NotAllowedForNonAADUsers}, nil
 		}
 	}
 
 	if s.rbacClient.SkipAuthzCheck(request) {
 		glog.V(3).Infof("user %s is part of skip authz list. returning no op.", request.User)
-		return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: rbac.NoOpinion}, nil
+		return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: rbac.NoOpinionVerdict}, nil
 	}
 
 	exist, result := s.rbacClient.GetResultFromCache(request)
 	if exist {
 		if result {
 			glog.V(3).Infof("cache hit: returning allowed to user")
-			return &authzv1.SubjectAccessReviewStatus{Allowed: result, Reason: rbac.AccessAllowed}, nil
+			return &authzv1.SubjectAccessReviewStatus{Allowed: result, Reason: rbac.AccessAllowedVerdict}, nil
 		} else {
 			glog.V(3).Infof("cache hit: returning denied to user")
-			return &authzv1.SubjectAccessReviewStatus{Allowed: result, Denied: true, Reason: rbac.NotAllowedVerdict}, nil
+			return &authzv1.SubjectAccessReviewStatus{Allowed: result, Denied: true, Reason: rbac.AccessNotAllowedVerdict}, nil
 		}
 	}
 
