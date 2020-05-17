@@ -28,7 +28,7 @@ import (
 
 const (
 	AccessAllowedVerdict     = "Access allowed"
-	Allowed                  = "Allowed"
+	Allowed                  = "allowed"
 	AccessNotAllowedVerdict  = "User does not have access to the resource in Azure. Update role assignment to allow access."
 	namespaces               = "namespaces"
 	NotAllowedForNonAADUsers = "Access denied by Azure RBAC for non AAD users. Configure --azure.skip-authz-for-non-aad-users to enable access."
@@ -323,10 +323,6 @@ func ConvertCheckAccessResponse(body []byte) (*authzv1.SubjectAccessReviewStatus
 	if glog.V(10) {
 		binaryData, _ := json.MarshalIndent(response, "", "    ")
 		glog.Infof("check access response:%s", binaryData)
-	}
-
-	for i, s := range response {
-		glog.V(10).Infof("no. %d, decesion: %s", i, s.Decision)
 	}
 
 	if strings.ToLower(response[0].Decision) == Allowed {
