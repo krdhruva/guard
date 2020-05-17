@@ -227,7 +227,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	if resp.StatusCode != http.StatusOK {
 		glog.Errorf("error in check access response. error code: %d, response: %s", resp.StatusCode, string(data))
 		if resp.StatusCode == http.StatusTooManyRequests {
-			glog.V(10).Infoln("Moving to another ARM instance!")
+			glog.V(10).Infoln("Closing idle TCP connections.")
 			a.client.CloseIdleConnections()
 			// TODO: add prom metrics for this scenario
 		}

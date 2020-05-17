@@ -78,17 +78,17 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 
 	if _, ok := request.Extra["oid"]; !ok {
 		if s.rbacClient.ShouldSkipAuthzCheckForNonAADUsers() {
-			glog.V(3).Infof("oid info is not available for user %s. SkipAuthzCheck enabled for AAD users.", request.User)
-			return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "no opinion"}, nil
+			glog.V(3).Infof("Skip RBAC is set for non AAD users. Returning no opinion for user %s.", request.User)
+			return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: rbac.NoOpinion}, nil
 		} else {
-			glog.V(3).Infof("user %s is part of skip authz list. returning no op.", request.User)
+			glog.V(3).Infof("Skip RBAC for non AAD user is not set. Returning deny access for non AAD user %s.", request.User)
 			return &authzv1.SubjectAccessReviewStatus{Allowed: false, Denied: true, Reason: rbac.NotAllowedForNonAADUsers}, nil
 		}
 	}
 
 	if s.rbacClient.SkipAuthzCheck(request) {
 		glog.V(3).Infof("user %s is part of skip authz list. returning no op.", request.User)
-		return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: "no opinion"}, nil
+		return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: rbac.NoOpinion}, nil
 	}
 
 	exist, result := s.rbacClient.GetResultFromCache(request)

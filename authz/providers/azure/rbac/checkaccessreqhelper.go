@@ -27,10 +27,11 @@ import (
 )
 
 const (
-	AccessAllowed            = "allowed"
-	NotAllowedVerdict        = "user does not have access to the resource"
+	AccessAllowed            = "Access allowed"
+	NotAllowedVerdict        = "User does not have access to the resource in Azure. Update role assignment to allow access."
 	namespaces               = "namespaces"
-	NotAllowedForNonAADUsers = "Invalid user info. UPN missing."
+	NotAllowedForNonAADUsers = "Access denied by Azure RBAC for non AAD users. Configure --azure.skip-authz-for-non-aad-users to enable access."
+	NoOpinion                = "Azure does not have opinion for this user or resource."
 )
 
 type SubjectInfoAttributes struct {
