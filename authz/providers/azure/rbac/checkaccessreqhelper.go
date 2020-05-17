@@ -325,6 +325,10 @@ func ConvertCheckAccessResponse(body []byte) (*authzv1.SubjectAccessReviewStatus
 		glog.Infof("check access response:%s", binaryData)
 	}
 
+	for i, s := range response {
+		glog.V(10).Infof("no. %d, decesion: %s", i, s.Decision)
+	}
+
 	if strings.ToLower(response[0].Decision) == Allowed {
 		allowed = true
 		verdict = AccessAllowedVerdict
