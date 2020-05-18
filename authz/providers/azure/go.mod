@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/Azure/go-autorest v12.2.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.9.0
-	github.com/appscode/guard v0.5.0-rc.1
+	github.com/appscode/guard v0.5.0
 	github.com/appscode/guard/authz v0.0.0-00010101000000-000000000000
 	github.com/appscode/guard/authz/providers/azure/data v0.0.0-00010101000000-000000000000
 	github.com/appscode/guard/authz/providers/azure/rbac v0.0.0-00010101000000-000000000000
@@ -16,9 +16,9 @@ require (
 	github.com/moul/http2curl v1.0.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.4.0
-	k8s.io/api v0.18.1
-	k8s.io/apimachinery v0.18.1
+	github.com/stretchr/testify v1.5.1
+	k8s.io/api v0.18.2
+	k8s.io/apimachinery v0.18.2
 )
 
 replace (

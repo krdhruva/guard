@@ -107,22 +107,22 @@ func Test_getDataAction(t *testing.T) {
 		{"arc3", args{
 			subRevReq: &authzv1.SubjectAccessReviewSpec{
 				ResourceAttributes: &authzv1.ResourceAttributes{Group: "policy", Resource: "podsecuritypolicies", Subresource: "status", Version: "v1", Name: "test", Verb: "use"}}, clusterType: "arc"},
-			AuthorizationActionInfo{AuthorizationEntity: AuthorizationEntity{Id: "arc/policy/podsecuritypolicies/action"}, IsDataAction: true}},
+			AuthorizationActionInfo{AuthorizationEntity: AuthorizationEntity{Id: "arc/policy/podsecuritypolicies/use/action"}, IsDataAction: true}},
 
 		{"aks3", args{
 			subRevReq: &authzv1.SubjectAccessReviewSpec{
 				ResourceAttributes: &authzv1.ResourceAttributes{Group: "authentication.k8s.io", Resource: "userextras", Subresource: "scopes", Version: "v1", Name: "test", Verb: "impersonate"}}, clusterType: "aks"},
-			AuthorizationActionInfo{AuthorizationEntity: AuthorizationEntity{Id: "aks/authentication.k8s.io/userextras/action"}, IsDataAction: true}},
+			AuthorizationActionInfo{AuthorizationEntity: AuthorizationEntity{Id: "aks/authentication.k8s.io/userextras/impersonate/action"}, IsDataAction: true}},
 
 		{"arc4", args{
 			subRevReq: &authzv1.SubjectAccessReviewSpec{
 				ResourceAttributes: &authzv1.ResourceAttributes{Group: "rbac.authorization.k8s.io", Resource: "clusterroles", Subresource: "status", Version: "v1", Name: "test", Verb: "bind"}}, clusterType: "arc"},
-			AuthorizationActionInfo{AuthorizationEntity: AuthorizationEntity{Id: "arc/rbac.authorization.k8s.io/clusterroles/action"}, IsDataAction: true}},
+			AuthorizationActionInfo{AuthorizationEntity: AuthorizationEntity{Id: "arc/rbac.authorization.k8s.io/clusterroles/bind/action"}, IsDataAction: true}},
 
 		{"aks4", args{
 			subRevReq: &authzv1.SubjectAccessReviewSpec{
 				ResourceAttributes: &authzv1.ResourceAttributes{Group: "rbac.authorization.k8s.io", Resource: "clusterroles", Subresource: "status", Version: "v1", Name: "test", Verb: "escalate"}}, clusterType: "aks"},
-			AuthorizationActionInfo{AuthorizationEntity: AuthorizationEntity{Id: "aks/rbac.authorization.k8s.io/clusterroles/action"}, IsDataAction: true}},
+			AuthorizationActionInfo{AuthorizationEntity: AuthorizationEntity{Id: "aks/rbac.authorization.k8s.io/clusterroles/escalate/action"}, IsDataAction: true}},
 
 		{"arc5", args{
 			subRevReq: &authzv1.SubjectAccessReviewSpec{
@@ -186,7 +186,7 @@ func Test_prepareCheckAccessRequestBody(t *testing.T) {
 	var want *CheckAccessRequest = nil
 	wantErr := errors.New("oid info not sent from authenticatoin module")
 
-	got, gotErr := prepareCheckAccessRequestBody(req, clusterType, resouceId)
+	got, gotErr := prepareCheckAccessRequestBody(req, clusterType, resouceId, true)
 
 	if got != want && gotErr != wantErr {
 		t.Errorf("Want:%v WantErr:%v, got:%v, gotErr:%v", want, wantErr, got, gotErr)
@@ -198,7 +198,7 @@ func Test_prepareCheckAccessRequestBody(t *testing.T) {
 	want = nil
 	wantErr = errors.New("oid info sent from authenticatoin module is not valid")
 
-	got, gotErr = prepareCheckAccessRequestBody(req, clusterType, resouceId)
+	got, gotErr = prepareCheckAccessRequestBody(req, clusterType, resouceId, true)
 
 	if got != want && gotErr != wantErr {
 		t.Errorf("Want:%v WantErr:%v, got:%v, gotErr:%v", want, wantErr, got, gotErr)
@@ -239,7 +239,7 @@ func Test_getResultCacheKey(t *testing.T) {
 				ResourceAttributes: &authzv1.ResourceAttributes{Namespace: "azure-arc",
 					Group: "authentication.k8s.io", Resource: "userextras", Subresource: "scopes", Version: "v1",
 					Name: "test", Verb: "impersonate"}}},
-			"beta@msn.com/azure-arc/authentication.k8s.io/userextras/action"},
+			"beta@msn.com/azure-arc/authentication.k8s.io/userextras/impersonate/action"},
 
 		{"arc", args{
 			subRevReq: &authzv1.SubjectAccessReviewSpec{

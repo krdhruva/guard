@@ -27,6 +27,7 @@ import (
 	"github.com/appscode/guard/authz/providers/azure/rbac"
 	"github.com/appscode/pat"
 	"github.com/stretchr/testify/assert"
+	authzv1 "k8s.io/api/authorization/v1"
 )
 
 const (
@@ -45,12 +46,12 @@ func clientSetup(serverUrl, mode string) (*Authorizer, error) {
 		MaxEntrySize:       5,
 		Verbose:            false,
 	}
-	dataStore, err := data.NewDataStore(options)
+	dataStore, err := data.NewDataStore(testOptions)
 	if err != nil {
 		return nil, err
 	}
 
-	c.rbacClient, err = rbac.New("client_id", "client_secret", "tenant_id", serverUrl+"login", serverUrl+"/arm", mode, "resourceId", 2000, dataStore, []string{"alpha, tango, charlie"})
+	c.rbacClient, err = rbac.New("client_id", "client_secret", "tenant_id", serverUrl+"/login/", serverUrl+"/arm/", mode, "resourceId", 2000, dataStore, []string{"alpha, tango, charlie"}, true, true)
 	if err != nil {
 		return nil, err
 	}
@@ -66,12 +67,12 @@ func serverSetup(loginResp, checkaccessResp string, loginStatus, checkaccessStat
 
 	m := pat.New()
 
-	m.Post("/login", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	m.Post("/login/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(loginStatus)
 		_, _ = w.Write([]byte(loginResp))
 	}))
 
-	m.Post("/arm/resourceId/providers/Microsoft.Authorization/checkaccess", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	m.Post("/arm/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(checkaccessStatus)
 		_, _ = w.Write([]byte(checkaccessResp))
 	}))

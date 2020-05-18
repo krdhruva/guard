@@ -24,12 +24,13 @@ import (
 	"time"
 
 	"github.com/appscode/guard/auth/providers/azure/graph"
+	"github.com/appscode/guard/authz"
 	"github.com/appscode/guard/authz/providers/azure/data"
 	"github.com/stretchr/testify/assert"
 	authzv1 "k8s.io/api/authorization/v1"
 )
 
-func getAPIServerAndAccessInfo(returnCode int, body, clusterType, resourceId string, options data.Options) (*httptest.Server, *AccessInfo, *data.DataStore) {
+func getAPIServerAndAccessInfo(returnCode int, body, clusterType, resourceId string, options data.Options) (*httptest.Server, *AccessInfo, authz.Store) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(returnCode)
 		_, _ = w.Write([]byte(body))
