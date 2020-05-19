@@ -35,8 +35,6 @@ export GOOS="${OS}"
 export GO111MODULE=on
 export GOFLAGS="-mod=vendor"
 
-printenv git_branch
-printenv git_tag
 go install \
     -installsuffix "static" \
     -ldflags "                                          \
