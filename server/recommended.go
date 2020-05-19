@@ -28,7 +28,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-type AuthRecommendedOptions struct {
+type RecommendedOptions struct {
 	SecureServing SecureServingOptions
 	NTP           NTPOptions
 	Github        github.Options
@@ -40,8 +40,8 @@ type AuthRecommendedOptions struct {
 	AuthProvider  providers.AuthProviders
 }
 
-func NewAuthRecommendedOptions() *AuthRecommendedOptions {
-	return &AuthRecommendedOptions{
+func NewRecommendedOptions() *RecommendedOptions {
+	return &RecommendedOptions{
 		SecureServing: NewSecureServingOptions(),
 		NTP:           NewNTPOptions(),
 		Github:        github.NewOptions(),
@@ -53,7 +53,7 @@ func NewAuthRecommendedOptions() *AuthRecommendedOptions {
 	}
 }
 
-func (o *AuthRecommendedOptions) AddFlags(fs *pflag.FlagSet) {
+func (o *RecommendedOptions) AddFlags(fs *pflag.FlagSet) {
 	o.SecureServing.AddFlags(fs)
 	o.NTP.AddFlags(fs)
 	o.AuthProvider.AddFlags(fs)
@@ -65,7 +65,7 @@ func (o *AuthRecommendedOptions) AddFlags(fs *pflag.FlagSet) {
 	o.LDAP.AddFlags(fs)
 }
 
-func (o *AuthRecommendedOptions) Validate() []error {
+func (o *RecommendedOptions) Validate() []error {
 	var errs []error
 	errs = append(errs, o.SecureServing.Validate()...)
 	errs = append(errs, o.NTP.Validate()...)

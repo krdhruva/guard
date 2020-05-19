@@ -229,7 +229,7 @@ github.com/onsi/gomega/matchers/support/goraph/util
 github.com/onsi/gomega/types
 # github.com/peterbourgon/diskv v2.0.1+incompatible
 github.com/peterbourgon/diskv
-# github.com/pkg/errors v0.9.1
+# github.com/pkg/errors v0.8.1
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
@@ -263,9 +263,9 @@ github.com/spf13/afero/mem
 # github.com/spf13/cobra v0.0.5
 github.com/spf13/cobra
 github.com/spf13/cobra/doc
-# github.com/spf13/pflag v1.0.5
+# github.com/spf13/pflag v1.0.3
 github.com/spf13/pflag
-# github.com/stretchr/testify v1.5.1
+# github.com/stretchr/testify v1.4.0
 github.com/stretchr/testify/assert
 # github.com/xanzy/go-gitlab v0.22.3
 github.com/xanzy/go-gitlab
@@ -464,7 +464,7 @@ gopkg.in/square/go-jose.v2/json
 gopkg.in/tomb.v1
 # gopkg.in/yaml.v2 v2.2.4
 gopkg.in/yaml.v2
-# k8s.io/api v0.18.2 => k8s.io/api v0.0.0-20191114100352-16d7abae0d2a
+# k8s.io/api v0.0.0-20191114100352-16d7abae0d2a => k8s.io/api v0.0.0-20191114100352-16d7abae0d2a
 k8s.io/api/admissionregistration/v1
 k8s.io/api/admissionregistration/v1beta1
 k8s.io/api/apps/v1
@@ -503,7 +503,7 @@ k8s.io/api/settings/v1alpha1
 k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
-# k8s.io/apimachinery v0.18.2 => github.com/kmodules/apimachinery v0.0.0-20191119091232-0553326db082
+# k8s.io/apimachinery v0.16.5-beta.1 => github.com/kmodules/apimachinery v0.0.0-20191119091232-0553326db082
 k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/api/meta

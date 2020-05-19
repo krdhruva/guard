@@ -5,38 +5,47 @@ go 1.12
 require (
 	github.com/Azure/go-autorest/autorest v0.9.0
 	github.com/appscode/go v0.0.0-20191119085241-0887d8ec2ecc
-	github.com/appscode/guard/authz v0.0.0-00010101000000-000000000000
-	github.com/appscode/guard/authz/providers v0.0.0-00010101000000-000000000000
-	github.com/appscode/guard/authz/providers/azure v0.0.0-00010101000000-000000000000
-	github.com/appscode/guard/authz/providers/azure/data v0.0.0-00010101000000-000000000000
 	github.com/appscode/pat v0.0.0-20170521084856-48ff78925b79
 	github.com/aws/aws-sdk-go v1.20.20
 	github.com/coreos/go-oidc v2.1.0+incompatible
+	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-ldap/ldap v3.0.3+incompatible
+	github.com/go-openapi/swag v0.19.4 // indirect
+	github.com/gogo/protobuf v1.2.2-0.20190730201129-28a6bbf47e48 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
+	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/google/go-github/v25 v25.1.3
 	github.com/google/gofuzz v1.0.0
+	github.com/hashicorp/go-uuid v1.0.2 // indirect
+	github.com/jcmturner/gofork v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.7
 	github.com/moul/http2curl v1.0.0
+	github.com/nmcclain/asn1-ber v0.0.0-20170104154839-2661553a0484 // indirect
 	github.com/nmcclain/ldap v0.0.0-20191021200707-3b3b69a7e9e3
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
-	github.com/pkg/errors v0.9.1
+	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.2
 	github.com/skratchdot/open-golang v0.0.0-20190402232053-79abb63cd66e
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v0.0.5
-	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.5.1
+	github.com/spf13/pflag v1.0.3
+	github.com/stretchr/testify v1.4.0
 	github.com/xanzy/go-gitlab v0.22.3
 	golang.org/x/net v0.0.0-20190812203447-cdfb69ac37fc
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
+	golang.org/x/sys v0.0.0-20190801041406-cbf593c0f2f3 // indirect
 	gomodules.xyz/cert v1.0.2
 	google.golang.org/api v0.6.1-0.20190607001116-5213b8090861
+	gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d // indirect
+	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
+	gopkg.in/jcmturner/aescts.v1 v1.0.1 // indirect
+	gopkg.in/jcmturner/dnsutils.v1 v1.0.1 // indirect
+	gopkg.in/jcmturner/goidentity.v1 v1.0.0 // indirect
 	gopkg.in/jcmturner/gokrb5.v4 v4.1.2
 	gopkg.in/square/go-jose.v2 v2.2.2
-	k8s.io/api v0.18.2
-	k8s.io/apimachinery v0.18.2
+	k8s.io/api v0.0.0-20191114100352-16d7abae0d2a
+	k8s.io/apimachinery v0.16.5-beta.1
 	k8s.io/client-go v12.0.0+incompatible
 	kmodules.xyz/client-go v0.0.0-20200125212626-a094b2ba24c6
 )
@@ -56,12 +65,6 @@ replace (
 	github.com/Azure/go-autorest/autorest/validation => github.com/Azure/go-autorest/autorest/validation v0.1.0
 	github.com/Azure/go-autorest/logger => github.com/Azure/go-autorest/logger v0.1.0
 	github.com/Azure/go-autorest/tracing => github.com/Azure/go-autorest/tracing v0.5.0
-	github.com/appscode/guard => ./
-	github.com/appscode/guard/authz => ./authz
-	github.com/appscode/guard/authz/providers => ./authz/providers
-	github.com/appscode/guard/authz/providers/azure => ./authz/providers/azure
-	github.com/appscode/guard/authz/providers/azure/data => ./authz/providers/azure/data
-	github.com/appscode/guard/authz/providers/azure/rbac => ./authz/providers/azure/rbac
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.2
 	google.golang.org/api => google.golang.org/api v0.6.1-0.20190607001116-5213b8090861
 	k8s.io/api => k8s.io/api v0.0.0-20191114100352-16d7abae0d2a
@@ -83,5 +86,4 @@ replace (
 	sigs.k8s.io/kustomize => sigs.k8s.io/kustomize v2.0.3+incompatible
 	sigs.k8s.io/structured-merge-diff => sigs.k8s.io/structured-merge-diff v0.0.0-20190817042607-6149e4549fca
 	sigs.k8s.io/yaml => sigs.k8s.io/yaml v1.1.0
-
 )

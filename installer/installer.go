@@ -30,21 +30,21 @@ var labels = map[string]string{
 	"app": "guard",
 }
 
-func Generate(authopts AuthOptions, authzopts AuthzOptions) ([]byte, error) {
+func Generate(opts Options) ([]byte, error) {
 	var objects []runtime.Object
 
-	if authopts.Namespace != metav1.NamespaceSystem && authopts.Namespace != metav1.NamespaceDefault {
-		objects = append(objects, newNamespace(authopts.Namespace))
+	if opts.Namespace != metav1.NamespaceSystem && opts.Namespace != metav1.NamespaceDefault {
+		objects = append(objects, newNamespace(opts.Namespace))
 	}
-	objects = append(objects, newServiceAccount(authopts.Namespace))
-	objects = append(objects, newClusterRole(authopts.Namespace))
-	objects = append(objects, newClusterRoleBinding(authopts.Namespace))
-	if deployObjects, err := newDeployment(authopts, authzopts); err != nil {
+	objects = append(objects, newServiceAccount(opts.Namespace))
+	objects = append(objects, newClusterRole(opts.Namespace))
+	objects = append(objects, newClusterRoleBinding(opts.Namespace))
+	if deployObjects, err := newDeployment(opts); err != nil {
 		return nil, err
 	} else {
 		objects = append(objects, deployObjects...)
 	}
-	if svc, err := newService(authopts.Namespace, authopts.Addr); err != nil {
+	if svc, err := newService(opts.Namespace, opts.Addr); err != nil {
 		return nil, err
 	} else {
 		objects = append(objects, svc)

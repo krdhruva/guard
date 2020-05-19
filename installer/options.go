@@ -25,14 +25,12 @@ import (
 	"github.com/appscode/guard/auth/providers/google"
 	"github.com/appscode/guard/auth/providers/ldap"
 	"github.com/appscode/guard/auth/providers/token"
-	authz "github.com/appscode/guard/authz/providers"
-	azureauthz "github.com/appscode/guard/authz/providers/azure"
 
 	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type AuthOptions struct {
+type Options struct {
 	PkiDir          string
 	Namespace       string
 	Addr            string
@@ -49,13 +47,8 @@ type AuthOptions struct {
 	Gitlab       gitlab.Options
 }
 
-type AuthzOptions struct {
-	AuthzProvider authz.AuthzProviders
-	Azure         azureauthz.Options
-}
-
-func NewAuthOptions() AuthOptions {
-	return AuthOptions{
+func New() Options {
+	return Options{
 		PkiDir:          auth.DefaultDataDir,
 		Namespace:       metav1.NamespaceSystem,
 		Addr:            "10.96.10.96:443",
@@ -70,13 +63,7 @@ func NewAuthOptions() AuthOptions {
 	}
 }
 
-func NewAuthzOptions() AuthzOptions {
-	return AuthzOptions{
-		Azure: azureauthz.NewOptions(),
-	}
-}
-
-func (o *AuthOptions) AddFlags(fs *pflag.FlagSet) {
+func (o *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.PkiDir, "pki-dir", o.PkiDir, "Path to directory where pki files are stored.")
 	fs.StringVarP(&o.Namespace, "namespace", "n", o.Namespace, "Name of Kubernetes namespace used to run guard server.")
 	fs.StringVar(&o.Addr, "addr", o.Addr, "Address (host:port) of guard server.")
@@ -92,11 +79,7 @@ func (o *AuthOptions) AddFlags(fs *pflag.FlagSet) {
 	o.Gitlab.AddFlags(fs)
 }
 
-func (o *AuthzOptions) AddFlags(fs *pflag.FlagSet) {
-	o.AuthzProvider.AddFlags(fs)
-	o.Azure.AddFlags(fs)
-}
-func (o *AuthOptions) Validate() []error {
+func (o *Options) Validate() []error {
 	var errs []error
 	errs = append(errs, o.AuthProvider.Validate()...)
 
@@ -117,17 +100,6 @@ func (o *AuthOptions) Validate() []error {
 	}
 	if o.AuthProvider.Has(gitlab.OrgType) {
 		errs = append(errs, o.Gitlab.Validate()...)
-	}
-
-	return errs
-}
-
-func (o *AuthzOptions) Validate(opt *AuthOptions) []error {
-	var errs []error
-	errs = append(errs, o.AuthzProvider.Validate()...)
-
-	if o.AuthzProvider.Has(azureauthz.OrgType) {
-		errs = append(errs, o.Azure.Validate(opt.Azure)...)
 	}
 
 	return errs

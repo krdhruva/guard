@@ -26,32 +26,24 @@ import (
 )
 
 func NewCmdInstaller() *cobra.Command {
-	authopts := installer.NewAuthOptions()
-	authzopts := installer.NewAuthzOptions()
-
+	opts := installer.New()
 	cmd := &cobra.Command{
 		Use:               "installer",
 		Short:             "Prints Kubernetes objects for deploying guard server",
 		DisableAutoGenTag: true,
 		Run: func(cmd *cobra.Command, args []string) {
-			errs := authopts.Validate()
+			errs := opts.Validate()
 			if errs != nil {
 				glog.Fatal(errs)
 			}
 
-			errs = authzopts.Validate(&authopts)
-			if errs != nil {
-				glog.Fatal(errs)
-			}
-
-			data, err := installer.Generate(authopts, authzopts)
+			data, err := installer.Generate(opts)
 			if err != nil {
 				glog.Fatal(err)
 			}
 			fmt.Println(string(data))
 		},
 	}
-	authopts.AddFlags(cmd.Flags())
-	authzopts.AddFlags(cmd.Flags())
+	opts.AddFlags(cmd.Flags())
 	return cmd
 }

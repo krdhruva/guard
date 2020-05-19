@@ -27,12 +27,13 @@ import (
 	"github.com/appscode/guard/auth/providers/google"
 	"github.com/appscode/guard/auth/providers/ldap"
 	"github.com/appscode/guard/auth/providers/token"
+
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	authv1 "k8s.io/api/authentication/v1"
 )
 
-func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (s Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if req.TLS == nil || len(req.TLS.PeerCertificates) == 0 {
 		write(w, nil, WithCode(errors.New("Missing client certificate"), http.StatusBadRequest))
 		return
@@ -52,12 +53,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if !s.AuthRecommendedOptions.AuthProvider.Has(org) {
+	if !s.RecommendedOptions.AuthProvider.Has(org) {
 		write(w, nil, WithCode(errors.Errorf("guard does not provide service for %v", org), http.StatusBadRequest))
 		return
 	}
 
-	if s.AuthRecommendedOptions.AuthProvider.Has(token.OrgType) && s.TokenAuthenticator != nil {
+	if s.RecommendedOptions.AuthProvider.Has(token.OrgType) && s.TokenAuthenticator != nil {
 		resp, err := s.TokenAuthenticator.Check(data.Spec.Token)
 		if err == nil {
 			write(w, resp, err)
@@ -75,18 +76,18 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	write(w, resp, err)
 }
 
-func (s *Server) getAuthProviderClient(org, commonName string) (auth.Interface, error) {
+func (s Server) getAuthProviderClient(org, commonName string) (auth.Interface, error) {
 	switch strings.ToLower(org) {
 	case github.OrgType:
-		return github.New(s.AuthRecommendedOptions.Github, commonName), nil
+		return github.New(s.RecommendedOptions.Github, commonName), nil
 	case google.OrgType:
-		return google.New(s.AuthRecommendedOptions.Google, commonName)
+		return google.New(s.RecommendedOptions.Google, commonName)
 	case gitlab.OrgType:
-		return gitlab.New(s.AuthRecommendedOptions.Gitlab), nil
+		return gitlab.New(s.RecommendedOptions.Gitlab), nil
 	case azure.OrgType:
-		return azure.New(s.AuthRecommendedOptions.Azure)
+		return azure.New(s.RecommendedOptions.Azure)
 	case ldap.OrgType:
-		return ldap.New(s.AuthRecommendedOptions.LDAP), nil
+		return ldap.New(s.RecommendedOptions.LDAP), nil
 	}
 
 	return nil, errors.Errorf("Client is using unknown organization %s", org)

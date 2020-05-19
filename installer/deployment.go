@@ -28,7 +28,6 @@ import (
 	"github.com/appscode/guard/auth/providers/google"
 	"github.com/appscode/guard/auth/providers/ldap"
 	"github.com/appscode/guard/auth/providers/token"
-	azureauthz "github.com/appscode/guard/authz/providers/azure"
 	"github.com/appscode/guard/server"
 
 	apps "k8s.io/api/apps/v1"
@@ -38,11 +37,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func newDeployment(authopts AuthOptions, authzopts AuthzOptions) (objects []runtime.Object, err error) {
+func newDeployment(opts Options) (objects []runtime.Object, err error) {
 	d := &apps.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "guard",
-			Namespace: authopts.Namespace,
+			Namespace: opts.Namespace,
 			Labels:    labels,
 		},
 		Spec: apps.DeploymentSpec{
@@ -62,7 +61,7 @@ func newDeployment(authopts AuthOptions, authzopts AuthzOptions) (objects []runt
 					Containers: []core.Container{
 						{
 							Name:  "guard",
-							Image: fmt.Sprintf("%s/guard:%v", authopts.PrivateRegistry, stringz.Val(v.Version.Version, "canary")),
+							Image: fmt.Sprintf("%s/guard:%v", opts.PrivateRegistry, stringz.Val(v.Version.Version, "canary")),
 							Args: []string{
 								"run",
 								"--v=3",
@@ -104,14 +103,14 @@ func newDeployment(authopts AuthOptions, authzopts AuthzOptions) (objects []runt
 			},
 		},
 	}
-	if authopts.imagePullSecret != "" {
+	if opts.imagePullSecret != "" {
 		d.Spec.Template.Spec.ImagePullSecrets = []core.LocalObjectReference{
 			{
-				Name: authopts.imagePullSecret,
+				Name: opts.imagePullSecret,
 			},
 		}
 	}
-	if authopts.RunOnMaster {
+	if opts.RunOnMaster {
 		d.Spec.Template.Spec.NodeSelector = map[string]string{
 			"node-role.kubernetes.io/master": "",
 		}
@@ -123,77 +122,61 @@ func newDeployment(authopts AuthOptions, authzopts AuthzOptions) (objects []runt
 	}
 	objects = append(objects, d)
 
-	servingOpts := server.NewSecureServingOptionsFromDir(authopts.PkiDir)
+	servingOpts := server.NewSecureServingOptionsFromDir(opts.PkiDir)
 	if extras, err := servingOpts.Apply(d); err != nil {
 		return nil, err
 	} else {
 		objects = append(objects, extras...)
 	}
 
-	if extras, err := authopts.AuthProvider.Apply(d); err != nil {
+	if extras, err := opts.AuthProvider.Apply(d); err != nil {
 		return nil, err
 	} else {
 		objects = append(objects, extras...)
 	}
 
-	if authopts.AuthProvider.Has(token.OrgType) {
-		if extras, err := authopts.Token.Apply(d); err != nil {
+	if opts.AuthProvider.Has(token.OrgType) {
+		if extras, err := opts.Token.Apply(d); err != nil {
 			return nil, err
 		} else {
 			objects = append(objects, extras...)
 		}
 	}
 
-	if authopts.AuthProvider.Has(google.OrgType) {
-		if extras, err := authopts.Google.Apply(d); err != nil {
+	if opts.AuthProvider.Has(google.OrgType) {
+		if extras, err := opts.Google.Apply(d); err != nil {
 			return nil, err
 		} else {
 			objects = append(objects, extras...)
 		}
 	}
 
-	if authopts.AuthProvider.Has(azure.OrgType) {
-		if extras, err := authopts.Azure.Apply(d); err != nil {
+	if opts.AuthProvider.Has(azure.OrgType) {
+		if extras, err := opts.Azure.Apply(d); err != nil {
 			return nil, err
 		} else {
 			objects = append(objects, extras...)
 		}
 	}
 
-	if authopts.AuthProvider.Has(ldap.OrgType) {
-		if extras, err := authopts.LDAP.Apply(d); err != nil {
+	if opts.AuthProvider.Has(ldap.OrgType) {
+		if extras, err := opts.LDAP.Apply(d); err != nil {
 			return nil, err
 		} else {
 			objects = append(objects, extras...)
 		}
 	}
 
-	if authopts.AuthProvider.Has(github.OrgType) {
-		if extras, err := authopts.Github.Apply(d); err != nil {
+	if opts.AuthProvider.Has(github.OrgType) {
+		if extras, err := opts.Github.Apply(d); err != nil {
 			return nil, err
 		} else {
 			objects = append(objects, extras...)
 		}
 	}
 
-	if authopts.AuthProvider.Has(gitlab.OrgType) {
-		if extras, err := authopts.Gitlab.Apply(d); err != nil {
-			return nil, err
-		} else {
-			objects = append(objects, extras...)
-		}
-	}
-
-	if len(authzopts.AuthzProvider.Providers) > 0 {
-		if extras, err := authzopts.AuthzProvider.Apply(d); err != nil {
-			return nil, err
-		} else {
-			objects = append(objects, extras...)
-		}
-	}
-
-	if authzopts.AuthzProvider.Has(azureauthz.OrgType) {
-		if extras, err := authzopts.Azure.Apply(d); err != nil {
+	if opts.AuthProvider.Has(gitlab.OrgType) {
+		if extras, err := opts.Gitlab.Apply(d); err != nil {
 			return nil, err
 		} else {
 			objects = append(objects, extras...)
