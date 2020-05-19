@@ -22,7 +22,7 @@ require (
 )
 
 replace (
-	github.com/appscode/guard/authz => ./../../../authz
+	github.com/appscode/guard/authz => ../../../authz
 	github.com/appscode/guard/authz/providers/azure/data => ./data
 	github.com/appscode/guard/authz/providers/azure/rbac => ./rbac
 )
