@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package azure
 
 import (
@@ -63,13 +64,14 @@ var (
 			true,
 		},
 		{
-			"azure.client-id is empty",
+			"azure.client-id is empty when verify-clientID is true",
 			func(o Options) Options {
 				o.ClientID = empty
+				o.VerifyClientID = true
 				return o
 			},
-			errors.New("azure.client-id must be non-empty"),
-			true,
+			errors.New("azure.client-id must be non-empty when azure.verify-clientID is set"),
+			false,
 		},
 		{
 			"azure.tenant-id is empty",

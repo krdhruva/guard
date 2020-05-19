@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package azure
 
 import (
@@ -21,6 +22,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/appscode/guard/auth"
 	"github.com/appscode/guard/auth/providers/azure/graph"
@@ -91,7 +93,7 @@ func New(opts Options) (auth.Interface, error) {
 		return nil, errors.Wrap(err, "failed to create provider for azure")
 	}
 
-	c.verifier = provider.Verifier(&oidc.Config{SkipClientIDCheck: true})
+	c.verifier = provider.Verifier(&oidc.Config{SkipClientIDCheck: !opts.VerifyClientID, ClientID: opts.ClientID})
 
 	switch opts.AuthMode {
 	case ClientCredentialAuthMode:
@@ -320,9 +322,14 @@ func getAuthInfo(environment, tenantID string, getMetadata func(string, string) 
 		return nil, errors.Wrap(err, "failed to get metadata for azure")
 	}
 
+	msgraphHost := metadata.MsgraphHost
+	if strings.EqualFold(azure.USGovernmentCloud.Name, environment) {
+		msgraphHost = "graph.microsoft.us"
+	}
+
 	return &authInfo{
 		AADEndpoint: env.ActiveDirectoryEndpoint,
-		MSGraphHost: metadata.MsgraphHost,
+		MSGraphHost: msgraphHost,
 		Issuer:      metadata.Issuer,
 	}, nil
 }

@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package server
 
 import (
@@ -135,7 +136,6 @@ func (s Server) ListenAndServe() {
 		ClientCAs:  caCertPool,
 		NextProtos: []string{"h2", "http/1.1"},
 	}
-	tlsConfig.BuildNameToCertificate()
 
 	m := pat.New()
 
