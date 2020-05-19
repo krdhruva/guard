@@ -15,7 +15,7 @@
 
 SHELL=/bin/bash -o pipefail
 
-GO_PKG   := github.com/krdhruva
+GO_PKG   := github.com/appscode
 REPO     := $(notdir $(shell pwd))
 BIN      := guard
 COMPRESS ?=no
