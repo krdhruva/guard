@@ -1,4 +1,4 @@
-module github.com/krdhruva/guard/authz/providers/azure/rbac
+module github.com/appscode/guard/authz/providers/azure/rbac
 
 go 1.13
 

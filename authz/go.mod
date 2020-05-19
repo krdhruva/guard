@@ -1,4 +1,4 @@
-module github.com/krdhruva/guard/authz
+module github.com/appscode/guard/authz
 
 go 1.13
 

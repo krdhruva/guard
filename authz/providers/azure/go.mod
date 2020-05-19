@@ -1,4 +1,4 @@
-module github.com/krdhruva/guard/authz/providers/azure
+module github.com/appscode/guard/authz/providers/azure
 
 go 1.13
 
