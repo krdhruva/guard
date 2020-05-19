@@ -5,10 +5,6 @@ go 1.12
 require (
 	github.com/Azure/go-autorest/autorest v0.9.0
 	github.com/appscode/go v0.0.0-20191119085241-0887d8ec2ecc
-	github.com/appscode/guard/authz v0.0.0-00010101000000-000000000000
-	github.com/appscode/guard/authz/providers v0.0.0-00010101000000-000000000000
-	github.com/appscode/guard/authz/providers/azure v0.0.0-00010101000000-000000000000
-	github.com/appscode/guard/authz/providers/azure/data v0.0.0-00010101000000-000000000000
 	github.com/appscode/pat v0.0.0-20170521084856-48ff78925b79
 	github.com/aws/aws-sdk-go v1.20.20
 	github.com/coreos/go-oidc v2.1.0+incompatible
@@ -56,12 +52,6 @@ replace (
 	github.com/Azure/go-autorest/autorest/validation => github.com/Azure/go-autorest/autorest/validation v0.1.0
 	github.com/Azure/go-autorest/logger => github.com/Azure/go-autorest/logger v0.1.0
 	github.com/Azure/go-autorest/tracing => github.com/Azure/go-autorest/tracing v0.5.0
-	github.com/appscode/guard => ./
-	github.com/appscode/guard/authz => ./authz
-	github.com/appscode/guard/authz/providers => ./authz/providers
-	github.com/appscode/guard/authz/providers/azure => ./authz/providers/azure
-	github.com/appscode/guard/authz/providers/azure/data => ./authz/providers/azure/data
-	github.com/appscode/guard/authz/providers/azure/rbac => ./authz/providers/azure/rbac
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.2
 	google.golang.org/api => google.golang.org/api v0.6.1-0.20190607001116-5213b8090861
 	k8s.io/api => k8s.io/api v0.0.0-20191114100352-16d7abae0d2a
