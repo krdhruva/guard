@@ -36,7 +36,7 @@ guard get installer [flags]
       --azure.use-group-uid                  Use group UID for authentication instead of group display name (default true)
       --azure.aks-authz-url string           url to call for AKS Authz flow
       --azure.authz-mode string              authz mode to call RBAC api, valid value is either aks or arc
-      --azure.resource-id  string            azure cluster resource id (//subscription/<subName>/resourcegroups/<RGname>/providers/Microsoft.ContainerService/managedClusters/<clustername> for AKS or //subscription/<subName>/resourcegroups/<RGname>/providers/Microsoft.Kubernetes/connectedClusters/<clustername> for arc) to be used as scope for RBAC check
+      --azure.resource-id  string            azure cluster resource id (/subscriptions/<SubscriptionId>/resourceGroups/<RGname>/providers/Microsoft.ContainerService/managedClusters/<clustername> for AKS or /subscriptions/<SubscriptionId>/resourceGroups/<RGname>/providers/Microsoft.Kubernetes/connectedClusters/<clustername> for arc) to be used as scope for RBAC check
       --azure.skip-authz-check strings       name of emails for which authz check will be skipped.
       --azure.skip-authz-for-non-aad-users   If true, Azure RBAC will be skipped for certificate users (non AAD users). Setting to false, all non AAD user requests will be denied.
       --azure.authz-resolve-group-memberships If true, authroizer will resolve group membership. Setting to false will use group list from subjectaccessreview request
@@ -88,4 +88,3 @@ guard get installer [flags]
 ### SEE ALSO
 
 * [guard get](/docs/reference/guard_get.md)	 - Get PKI
-
