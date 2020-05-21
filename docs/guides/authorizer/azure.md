@@ -49,7 +49,7 @@ $ kubectl apply -f installer.yaml
 > Azure authorization can be enabled only with Azure authentication.  
 > Create single installer.yaml with both authentication and authorization options together.    
 > ARC mode can be enabled with client credential mode or On-Behalf-Of (OBO) mode.  
-> Keep azure.skip-authz-for-non-aad-users=true for certificate users (non AAD users) to work with Azure authorization. You are required to set separate RBAC for certificate users.  
+> Keep azure.skip-authz-for-non-aad-users=true for certificate users (non AAD users) to work with Azure authorization. You are required to set separate Kubernetes RBAC authorizer for certificate users.  
 
 ## Further Reading:
 - https://docs.microsoft.com/en-us/azure/role-based-access-control/overview   
