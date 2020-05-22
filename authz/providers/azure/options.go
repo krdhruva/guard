@@ -42,18 +42,14 @@ type Options struct {
 }
 
 func NewOptions() Options {
-	return Options{
-		ARMCallLimit:                 defaultArmCallLimit,
-		SkipAuthzForNonAADUsers:      true,
-		AuthzResolveGroupMemberships: true,
-	}
+	return Options{}
 }
 
 func (o *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.AuthzMode, "azure.authz-mode", "", "authz mode to call RBAC api, valid value is either aks or arc")
 	fs.StringVar(&o.ResourceId, "azure.resource-id", "", "azure cluster resource id (//subscription/<subName>/resourcegroups/<RGname>/providers/Microsoft.ContainerService/managedClusters/<clustername> for AKS or //subscription/<subName>/resourcegroups/<RGname>/providers/Microsoft.Kubernetes/connectedClusters/<clustername> for arc) to be used as scope for RBAC check")
 	fs.StringVar(&o.AKSAuthzURL, "azure.aks-authz-url", "", "url to call for AKS Authz flow")
-	fs.IntVar(&o.ARMCallLimit, "azure.arm-call-limit", o.ARMCallLimit, "No of calls before which webhook switch to new ARM instance to avoid throttling")
+	fs.IntVar(&o.ARMCallLimit, "azure.arm-call-limit", defaultArmCallLimit, "No of calls before which webhook switch to new ARM instance to avoid throttling")
 	fs.StringSliceVar(&o.SkipAuthzCheck, "azure.skip-authz-check", []string{""}, "name of usernames/email for which authz check will be skipped")
 	fs.BoolVar(&o.AuthzResolveGroupMemberships, "azure.authz-resolve-group-memberships", o.AuthzResolveGroupMemberships, "set to true to resolve group membership by authorizer. Setting to false will use group list from subjectaccessreview request")
 	fs.BoolVar(&o.SkipAuthzForNonAADUsers, "azure.skip-authz-for-non-aad-users", o.SkipAuthzForNonAADUsers, "skip authz for non AAD users")
