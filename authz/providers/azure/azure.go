@@ -91,6 +91,11 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 		return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: rbac.NoOpinionVerdict}, nil
 	}
 
+	if s.rbacClient.IsNonResPathDiscoveryCheck(request) {
+		glog.V(3).Infof("Allowing request to user %s for discovery check.", request.User)
+		return &authzv1.SubjectAccessReviewStatus{Allowed: true, Reason: rbac.AccessAllowedVerdict}, nil
+	}
+
 	exist, result := s.rbacClient.GetResultFromCache(request)
 	if exist {
 		if result {

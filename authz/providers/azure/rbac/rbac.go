@@ -169,6 +169,16 @@ func (a *AccessInfo) SetResultInCache(request *authzv1.SubjectAccessReviewSpec, 
 	return a.dataStore.Set(key, result)
 }
 
+func (a *AccessInfo) IsNonResPathDiscoveryCheck(request *authzv1.SubjectAccessReviewSpec) bool {
+	if request.NonResourceAttributes != nil && strings.ToLower(request.NonResourceAttributes.Verb) == "get" {
+		path := strings.ToLower(request.NonResourceAttributes.Path)
+		if strings.HasPrefix(path, "/api") || strings.HasPrefix(path, "/openapi") || strings.HasPrefix(path, "/version") || strings.HasPrefix(path, "/healthz") {
+			return true
+		}
+	}
+	return false
+}
+
 func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*authzv1.SubjectAccessReviewStatus, error) {
 	checkAccessBody, err := prepareCheckAccessRequestBody(request, a.clusterType, a.azureResourceId, a.retrieveGroupMemberships)
 
