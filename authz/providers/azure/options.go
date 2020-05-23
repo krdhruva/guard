@@ -32,20 +32,22 @@ const (
 )
 
 type Options struct {
-	AuthzMode                    string
-	ResourceId                   string
-	AKSAuthzURL                  string
-	ARMCallLimit                 int
-	SkipAuthzCheck               []string
-	AuthzResolveGroupMemberships bool
-	SkipAuthzForNonAADUsers      bool
+	AuthzMode                    	string
+	ResourceId                   	string
+	AKSAuthzURL                  	string
+	ARMCallLimit                 	int
+	SkipAuthzCheck               	[]string
+	AuthzResolveGroupMemberships 	bool
+	SkipAuthzForNonAADUsers      	bool
+	AllowNonResDiscoveryPathAccess	bool
 }
 
 func NewOptions() Options {
 	return Options{
-		ARMCallLimit:                 defaultArmCallLimit,
-		AuthzResolveGroupMemberships: true,
-		SkipAuthzForNonAADUsers:      true}
+		ARMCallLimit:                  defaultArmCallLimit,
+		AuthzResolveGroupMemberships:  true,
+		SkipAuthzForNonAADUsers:       true,
+		AllowNonResDiscoveryPathAccess:true}
 }
 
 func (o *Options) AddFlags(fs *pflag.FlagSet) {
@@ -56,6 +58,7 @@ func (o *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringSliceVar(&o.SkipAuthzCheck, "azure.skip-authz-check", []string{""}, "name of usernames/email for which authz check will be skipped")
 	fs.BoolVar(&o.AuthzResolveGroupMemberships, "azure.authz-resolve-group-memberships", o.AuthzResolveGroupMemberships, "set to true to resolve group membership by authorizer. Setting to false will use group list from subjectaccessreview request")
 	fs.BoolVar(&o.SkipAuthzForNonAADUsers, "azure.skip-authz-for-non-aad-users", o.SkipAuthzForNonAADUsers, "skip authz for non AAD users")
+	fs.BoolVar(&o.AllowNonResDiscoveryPathAccess, "azure.allow-nonres-discovery-path-access", o.AllowNonResDiscoveryPathAccess, "allow access on Non Resource paths reqired for discovery, setting it false will require explicit non resource path role assignment for all users in Azure RBAC")
 }
 
 func (o *Options) Validate(azure azure.Options) []error {
@@ -64,7 +67,6 @@ func (o *Options) Validate(azure azure.Options) []error {
 	switch o.AuthzMode {
 	case AKSAuthzMode:
 	case ARCAuthzMode:
-	case "":
 	default:
 		errs = append(errs, errors.New("invalid azure.authz-mode. valid value is either aks or arc"))
 	}
@@ -120,6 +122,8 @@ func (o Options) Apply(d *apps.Deployment) (extraObjs []runtime.Object, err erro
 	args = append(args, fmt.Sprintf("--azure.authz-resolve-group-memberships=%t", o.AuthzResolveGroupMemberships))
 
 	args = append(args, fmt.Sprintf("--azure.skip-authz-for-non-aad-users=%t", o.SkipAuthzForNonAADUsers))
+
+	args = append(args, fmt.Sprintf("--azure.allow-nonres-discovery-path-access=%t", o.AllowNonResDiscoveryPathAccess))
 
 	container.Args = args
 	d.Spec.Template.Spec.Containers[0] = container

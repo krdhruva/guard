@@ -62,9 +62,10 @@ type AccessInfo struct {
 	skipCheck                map[string]void
 	retrieveGroupMemberships bool
 	skipAuthzForNonAADUsers  bool
+	allowNonResDiscoveryPathAccess bool
 }
 
-func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterType, resourceId string, armCallLimit int, dataStore authz.Store, skipList []string, retrieveGroupMemberships, skipAuthzForNonAADUsers bool) (*AccessInfo, error) {
+func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterType, resourceId string, armCallLimit int, dataStore authz.Store, skipList []string, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess bool) (*AccessInfo, error) {
 	u := &AccessInfo{
 		client: http.DefaultClient,
 		headers: http.Header{
@@ -76,7 +77,8 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterT
 		armCallLimit:             armCallLimit,
 		dataStore:                dataStore,
 		retrieveGroupMemberships: retrieveGroupMemberships,
-		skipAuthzForNonAADUsers:  skipAuthzForNonAADUsers}
+		skipAuthzForNonAADUsers:  skipAuthzForNonAADUsers,
+		allowNonResDiscoveryPathAccess: allowNonResDiscoveryPathAccess}
 
 	u.skipCheck = make(map[string]void, len(skipList))
 	var member void
@@ -95,7 +97,7 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterT
 	return u, nil
 }
 
-func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore authz.Store, skipCheck []string, retrieveGroupMemberships, skipAuthzForNonAADUsers bool) (*AccessInfo, error) {
+func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore authz.Store, skipCheck []string, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess bool) (*AccessInfo, error) {
 	rbacURL, err := url.Parse(armEndPoint)
 
 	if err != nil {
@@ -106,10 +108,10 @@ func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType
 		fmt.Sprintf("%s%s/oauth2/v2.0/token", aadEndpoint, tenantID),
 		fmt.Sprintf("%s.default", armEndPoint))
 
-	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore, skipCheck, retrieveGroupMemberships, skipAuthzForNonAADUsers)
+	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore, skipCheck, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess)
 }
 
-func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore authz.Store, skipCheck []string, retrieveGroupMemberships, skipAuthzForNonAADUsers bool) (*AccessInfo, error) {
+func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore authz.Store, skipCheck []string, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess bool) (*AccessInfo, error) {
 	rbacURL, err := url.Parse(armEndPoint)
 
 	if err != nil {
@@ -117,7 +119,7 @@ func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string,
 	}
 	tokenProvider := graph.NewAKSTokenProvider(tokenURL, tenantID)
 
-	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore, skipCheck, retrieveGroupMemberships, skipAuthzForNonAADUsers)
+	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore, skipCheck, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess)
 }
 
 func (a *AccessInfo) RefreshToken() error {
@@ -169,8 +171,8 @@ func (a *AccessInfo) SetResultInCache(request *authzv1.SubjectAccessReviewSpec, 
 	return a.dataStore.Set(key, result)
 }
 
-func (a *AccessInfo) IsNonResPathDiscoveryCheck(request *authzv1.SubjectAccessReviewSpec) bool {
-	if request.NonResourceAttributes != nil && strings.ToLower(request.NonResourceAttributes.Verb) == "get" {
+func (a *AccessInfo) AllowNonResPathDiscoveryAccess(request *authzv1.SubjectAccessReviewSpec) bool {
+	if a.allowNonResDiscoveryPathAccess && request.NonResourceAttributes != nil && strings.ToLower(request.NonResourceAttributes.Verb) == "get" {
 		path := strings.ToLower(request.NonResourceAttributes.Path)
 		if strings.HasPrefix(path, "/api") || strings.HasPrefix(path, "/openapi") || strings.HasPrefix(path, "/version") || strings.HasPrefix(path, "/healthz") {
 			return true

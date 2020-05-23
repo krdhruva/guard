@@ -28,6 +28,7 @@ import (
 	authz "github.com/appscode/guard/authz/providers"
 	azureauthz "github.com/appscode/guard/authz/providers/azure"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -127,6 +128,9 @@ func (o *AuthzOptions) Validate(opt *AuthOptions) []error {
 	errs = append(errs, o.AuthzProvider.Validate()...)
 
 	if o.AuthzProvider.Has(azureauthz.OrgType) {
+		if !opt.AuthProvider.Has(azure.OrgType) {
+			errs = append(errs, errors.New("azure authz option must be used only with azure auth provider."))
+		}
 		errs = append(errs, o.Azure.Validate(opt.Azure)...)
 	}
 

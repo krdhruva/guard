@@ -54,9 +54,9 @@ func New(opts Options, authopts auth.Options, dataStore authz.Store) (authz.Inte
 
 	switch opts.AuthzMode {
 	case ARCAuthzMode:
-		c.rbacClient, err = rbac.New(authopts.ClientID, authopts.ClientSecret, authopts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore, opts.SkipAuthzCheck, opts.AuthzResolveGroupMemberships, opts.SkipAuthzForNonAADUsers)
+		c.rbacClient, err = rbac.New(authopts.ClientID, authopts.ClientSecret, authopts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore, opts.SkipAuthzCheck, opts.AuthzResolveGroupMemberships, opts.SkipAuthzForNonAADUsers, opts.AllowNonResDiscoveryPathAccess)
 	case AKSAuthzMode:
-		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, authopts.TenantID, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore, opts.SkipAuthzCheck, opts.AuthzResolveGroupMemberships, opts.SkipAuthzForNonAADUsers)
+		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, authopts.TenantID, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore, opts.SkipAuthzCheck, opts.AuthzResolveGroupMemberships, opts.SkipAuthzForNonAADUsers, opts.AllowNonResDiscoveryPathAccess)
 	}
 
 	if err != nil {
@@ -91,11 +91,6 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 		return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: rbac.NoOpinionVerdict}, nil
 	}
 
-	if s.rbacClient.IsNonResPathDiscoveryCheck(request) {
-		glog.V(3).Infof("Allowing request to user %s for discovery check.", request.User)
-		return &authzv1.SubjectAccessReviewStatus{Allowed: true, Reason: rbac.AccessAllowedVerdict}, nil
-	}
-
 	exist, result := s.rbacClient.GetResultFromCache(request)
 	if exist {
 		if result {
@@ -105,6 +100,12 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 			glog.V(3).Infof("cache hit: returning denied to user")
 			return &authzv1.SubjectAccessReviewStatus{Allowed: result, Denied: true, Reason: rbac.AccessNotAllowedVerdict}, nil
 		}
+	}
+
+	if s.rbacClient.AllowNonResPathDiscoveryAccess(request) {
+		glog.V(3).Infof("Allowing request to user %s for discovery check.", request.User)
+		s.rbacClient.SetResultInCache(request, true)
+                return &authzv1.SubjectAccessReviewStatus{Allowed: true, Reason: rbac.AccessAllowedVerdict}, nil
 	}
 
 	if s.rbacClient.IsTokenExpired() {

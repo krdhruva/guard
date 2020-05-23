@@ -51,7 +51,7 @@ func clientSetup(serverUrl, mode string) (*Authorizer, error) {
 		return nil, err
 	}
 
-	c.rbacClient, err = rbac.New("client_id", "client_secret", "tenant_id", serverUrl+"/login/", serverUrl+"/arm/", mode, "resourceId", 2000, dataStore, []string{"alpha, tango, charlie"}, true, true)
+	c.rbacClient, err = rbac.New("client_id", "client_secret", "tenant_id", serverUrl+"/login/", serverUrl+"/arm/", mode, "resourceId", 2000, dataStore, []string{"alpha, tango, charlie"}, true, true, true)
 	if err != nil {
 		return nil, err
 	}
