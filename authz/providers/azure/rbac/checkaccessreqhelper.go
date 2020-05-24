@@ -101,8 +101,8 @@ type DenyAssignment struct {
 	Permission
 	Scope                   string `json:"scope"`
 	DoNotApplyToChildScopes bool   `json:"doNotApplyToChildScopes"`
-	principals              []Principal
-	excludeprincipals       []Principal
+	Principals              []Principal
+	ExcludePrincipals       []Principal
 	Condition               string `json:"condition"`
 	ConditionVersion        string `json:"conditionVersion"`
 }
@@ -110,7 +110,7 @@ type DenyAssignment struct {
 type AzureDenyAssignment struct {
 	MetaData          map[string]interface{} `json:"metadata"`
 	IsSystemProtected string                 `json:"isSystemProtected"`
-	IsBuiltIn         bool                   `json:isBuiltIn`
+	IsBuiltIn         bool                   `json:"isBuiltIn"`
 	DenyAssignment
 }
 
@@ -223,51 +223,51 @@ func getResultCacheKey(subRevReq *authzv1.SubjectAccessReviewSpec) string {
 
 func prepareCheckAccessRequestBody(req *authzv1.SubjectAccessReviewSpec, clusterType, resourceId string, retrieveGroupMemberships bool) (*CheckAccessRequest, error) {
 	/* This is how sample SubjectAccessReview request will look like
-		{
-	    	"kind": "SubjectAccessReview",
+	{
+		"kind": "SubjectAccessReview",
 	    	"apiVersion": "authorization.k8s.io/v1beta1",
 	    	"metadata": {
 	        	"creationTimestamp": null
 	    	},
 	    	"spec": {
 	        	"resourceAttributes": {
-	            	"namespace": "default",
-	            	"verb": "get",
-					"group": "extensions",
-					"version": "v1beta1",
-					"resource": "deployments",
-					"name": "obo-deploy"
+	            		"namespace": "default",
+		            	"verb": "get",
+				"group": "extensions",
+				"version": "v1beta1",
+				"resource": "deployments",
+				"name": "obo-deploy"
 	        	},
-				"user": "user@contoso.com",
-				"extra": {
-					"oid": [
-	    				"62103f2e-051d-48cc-af47-b1ff3deec630"
-					]
+			"user": "user@contoso.com",
+			"extra": {
+				"oid": [
+	    			"62103f2e-051d-48cc-af47-b1ff3deec630"
+			]
 	        	}
 	    	},
 	    	"status": {
 	        	"allowed": false
 	    	}
-		}
+	}
 
-		For check access it will be converted into following request for arc cluster:
-		{
-			"Subject": {
-				"Attributes": {
-					"ObjectId": "62103f2e-051d-48cc-af47-b1ff3deec630",
-					"xms-pasrp-retrievegroupmemberships": true
-				}
-			},
-			"Actions": [
-				{
-					"Id": "Microsoft.Kubernetes/connectedClusters/extensions/deployments/read",
-					"IsDataAction": true
-				}
-			],
-			"Resource": {
-				"Id": "<resourceId>/namespaces/<namespace name>"
+	For check access it will be converted into following request for arc cluster:
+	{
+		"Subject": {
+			"Attributes": {
+				"ObjectId": "62103f2e-051d-48cc-af47-b1ff3deec630",
+				"xms-pasrp-retrievegroupmemberships": true
 			}
+		},
+		"Actions": [
+			{
+				"Id": "Microsoft.Kubernetes/connectedClusters/extensions/deployments/read",
+				"IsDataAction": true
+			}
+		],
+		"Resource": {
+			"Id": "<resourceId>/namespaces/<namespace name>"
 		}
+	}
 	*/
 	checkaccessreq := CheckAccessRequest{}
 	var userOid string
