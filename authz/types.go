@@ -46,7 +46,7 @@ func (o orgs) String() string {
 }
 
 type Interface interface {
-	Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.SubjectAccessReviewStatus, error)
+	Check(request *authzv1.SubjectAccessReviewSpec, store Store) (*authzv1.SubjectAccessReviewStatus, error)
 }
 
 type Store interface {

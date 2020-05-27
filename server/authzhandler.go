@@ -66,14 +66,14 @@ func (s *Authzhandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	resp, err := client.Check(&data.Spec)
+	resp, err := client.Check(&data.Spec, s.Store)
 	writeAuthzResponse(w, &data.Spec, resp, err)
 }
 
 func (s *Authzhandler) getAuthzProviderClient(org string) (authz.Interface, error) {
 	switch strings.ToLower(org) {
 	case azure.OrgType:
-		return azure.New(s.AuthzRecommendedOptions.Azure, s.AuthRecommendedOptions.Azure, s.Store)
+		return azure.New(s.AuthzRecommendedOptions.Azure, s.AuthRecommendedOptions.Azure)
 	}
 
 	return nil, errors.Errorf("Client is using unknown organization %s", org)

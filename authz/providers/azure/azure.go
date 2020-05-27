@@ -17,6 +17,7 @@ package azure
 
 import (
 	"strings"
+	"sync"
 
 	auth "github.com/appscode/guard/auth/providers/azure"
 	"github.com/appscode/guard/authz"
@@ -32,6 +33,12 @@ const (
 	OrgType = "azure"
 )
 
+var (
+	once   sync.Once
+	client authz.Interface
+	err    error
+)
+
 func init() {
 	authz.SupportedOrgs = append(authz.SupportedOrgs, OrgType)
 }
@@ -45,7 +52,17 @@ type authzInfo struct {
 	ARMEndPoint string
 }
 
-func New(opts Options, authopts auth.Options, dataStore authz.Store) (authz.Interface, error) {
+func New(opts Options, authopts auth.Options) (authz.Interface, error) {
+	once.Do(func() {
+		client, err := newAuthzClient(opts, authopts)
+		if client == nil || err != nil {
+			glog.Fatalf("Authz RBAC client creation failed. Error: %s", err)
+		}
+	})
+	return client, err
+}
+
+func newAuthzClient(opts Options, authopts auth.Options) (authz.Interface, error) {
 	c := &Authorizer{}
 
 	authzInfoVal, err := getAuthzInfo(authopts.Environment)
@@ -55,18 +72,19 @@ func New(opts Options, authopts auth.Options, dataStore authz.Store) (authz.Inte
 
 	switch opts.AuthzMode {
 	case ARCAuthzMode:
-		c.rbacClient, err = rbac.New(authopts.ClientID, authopts.ClientSecret, authopts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.ResourceId, rbac.ARCCluster, opts.ARMCallLimit, dataStore, opts.SkipAuthzCheck, opts.AuthzResolveGroupMemberships, opts.SkipAuthzForNonAADUsers, opts.AllowNonResDiscoveryPathAccess)
+		c.rbacClient, err = rbac.New(authopts.ClientID, authopts.ClientSecret, authopts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.ResourceId, rbac.ARCCluster, opts.ARMCallLimit, opts.SkipAuthzCheck, opts.AuthzResolveGroupMemberships, opts.SkipAuthzForNonAADUsers, opts.AllowNonResDiscoveryPathAccess)
 	case AKSAuthzMode:
-		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, authopts.TenantID, authzInfoVal.ARMEndPoint, opts.ResourceId, rbac.AKSCluster, opts.ARMCallLimit, dataStore, opts.SkipAuthzCheck, opts.AuthzResolveGroupMemberships, opts.SkipAuthzForNonAADUsers, opts.AllowNonResDiscoveryPathAccess)
+		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, authopts.TenantID, authzInfoVal.ARMEndPoint, opts.ResourceId, rbac.AKSCluster, opts.ARMCallLimit, opts.SkipAuthzCheck, opts.AuthzResolveGroupMemberships, opts.SkipAuthzForNonAADUsers, opts.AllowNonResDiscoveryPathAccess)
 	}
 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create ms rbac client")
 	}
-	return c, nil
+
+	return client, nil
 }
 
-func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.SubjectAccessReviewStatus, error) {
+func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec, store authz.Store) (*authzv1.SubjectAccessReviewStatus, error) {
 	if request == nil {
 		return nil, errors.New("subject access review is nil")
 	}
@@ -92,7 +110,7 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 		}
 	}
 
-	exist, result := s.rbacClient.GetResultFromCache(request)
+	exist, result := s.rbacClient.GetResultFromCache(request, store)
 	if exist {
 		if result {
 			glog.V(3).Infof("cache hit: returning allowed to user %s", request.User)
@@ -105,14 +123,22 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 
 	if s.rbacClient.AllowNonResPathDiscoveryAccess(request) {
 		glog.V(3).Infof("Allowing request to user %s for discovery check.", request.User)
-		_ = s.rbacClient.SetResultInCache(request, true)
+		_ = s.rbacClient.SetResultInCache(request, true, store)
 		return &authzv1.SubjectAccessReviewStatus{Allowed: true, Reason: rbac.AccessAllowedVerdict}, nil
 	}
 
 	if s.rbacClient.IsTokenExpired() {
 		_ = s.rbacClient.RefreshToken()
 	}
-	return s.rbacClient.CheckAccess(request)
+
+	response, err := s.rbacClient.CheckAccess(request)
+	if err == nil {
+		_ = s.rbacClient.SetResultInCache(request, response.Allowed, store)
+	} else {
+		_ = s.rbacClient.SetResultInCache(request, false, store)
+	}
+
+	return response, err
 }
 
 func getAuthzInfo(environment string) (*authzInfo, error) {

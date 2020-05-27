@@ -25,6 +25,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/appscode/guard/auth/providers/azure/graph"
@@ -63,11 +64,11 @@ type AccessInfo struct {
 	clusterType                    string
 	azureResourceId                string
 	armCallLimit                   int
-	dataStore                      authz.Store
 	skipCheck                      map[string]void
 	retrieveGroupMemberships       bool
 	skipAuthzForNonAADUsers        bool
 	allowNonResDiscoveryPathAccess bool
+	lock                           *sync.Mutex
 }
 
 func getClusterTypeString(t ClusterType) string {
@@ -81,7 +82,7 @@ func getClusterTypeString(t ClusterType) string {
 	}
 }
 
-func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, resourceId string, clsType ClusterType, armCallLimit int, dataStore authz.Store, skipList []string, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess bool) (*AccessInfo, error) {
+func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, resourceId string, clsType ClusterType, armCallLimit int, skipList []string, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess bool) (*AccessInfo, error) {
 	u := &AccessInfo{
 		client: http.DefaultClient,
 		headers: http.Header{
@@ -91,7 +92,6 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, resource
 		tokenProvider:                  tokenProvider,
 		azureResourceId:                resourceId,
 		armCallLimit:                   armCallLimit,
-		dataStore:                      dataStore,
 		retrieveGroupMemberships:       retrieveGroupMemberships,
 		skipAuthzForNonAADUsers:        skipAuthzForNonAADUsers,
 		allowNonResDiscoveryPathAccess: allowNonResDiscoveryPathAccess,
@@ -104,11 +104,12 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, resource
 	}
 
 	u.clusterType = getClusterTypeString(clsType)
+	u.lock = &sync.Mutex{}
 
 	return u, nil
 }
 
-func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, resourceId string, clsType ClusterType, armCallLimit int, dataStore authz.Store, skipCheck []string, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess bool) (*AccessInfo, error) {
+func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, resourceId string, clsType ClusterType, armCallLimit int, skipCheck []string, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess bool) (*AccessInfo, error) {
 	rbacURL, err := url.Parse(armEndPoint)
 
 	if err != nil {
@@ -119,10 +120,10 @@ func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, resourceId 
 		fmt.Sprintf("%s%s/oauth2/v2.0/token", aadEndpoint, tenantID),
 		fmt.Sprintf("%s.default", armEndPoint))
 
-	return newAccessInfo(tokenProvider, rbacURL, resourceId, clsType, armCallLimit, dataStore, skipCheck, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess)
+	return newAccessInfo(tokenProvider, rbacURL, resourceId, clsType, armCallLimit, skipCheck, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess)
 }
 
-func NewWithAKS(tokenURL, tenantID, armEndPoint, resourceId string, clsType ClusterType, armCallLimit int, dataStore authz.Store, skipCheck []string, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess bool) (*AccessInfo, error) {
+func NewWithAKS(tokenURL, tenantID, armEndPoint, resourceId string, clsType ClusterType, armCallLimit int, skipCheck []string, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess bool) (*AccessInfo, error) {
 	rbacURL, err := url.Parse(armEndPoint)
 
 	if err != nil {
@@ -130,20 +131,25 @@ func NewWithAKS(tokenURL, tenantID, armEndPoint, resourceId string, clsType Clus
 	}
 	tokenProvider := graph.NewAKSTokenProvider(tokenURL, tenantID)
 
-	return newAccessInfo(tokenProvider, rbacURL, resourceId, clsType, armCallLimit, dataStore, skipCheck, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess)
+	return newAccessInfo(tokenProvider, rbacURL, resourceId, clsType, armCallLimit, skipCheck, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess)
 }
 
 func (a *AccessInfo) RefreshToken() error {
-	resp, err := a.tokenProvider.Acquire("")
-	if err != nil {
-		glog.Errorf("%s failed to refresh token : %s", a.tokenProvider.Name(), err.Error())
-		return errors.Wrap(err, "failed to refresh rbac token")
-	}
+	a.lock.Lock()
+	defer a.lock.Unlock()
+	if a.IsTokenExpired() {
+		resp, err := a.tokenProvider.Acquire("")
+		if err != nil {
+			glog.Errorf("%s failed to refresh token : %s", a.tokenProvider.Name(), err.Error())
+			return errors.Wrap(err, "failed to refresh rbac token")
+		}
 
-	// Set the authorization headers for future requests
-	a.headers.Set("Authorization", fmt.Sprintf("Bearer %s", resp.Token))
-	expIn := time.Duration(resp.Expires) * time.Second
-	a.expiresAt = time.Now().Add(expIn - expiryDelta)
+		// Set the authorization headers for future requests
+		a.headers.Set("Authorization", fmt.Sprintf("Bearer %s", resp.Token))
+		expIn := time.Duration(resp.Expires) * time.Second
+		a.expiresAt = time.Now().Add(expIn - expiryDelta)
+		glog.Infof("Token refresh successful on %t. Expire at:%t", time.Now(), a.expiresAt)
+	}
 
 	return nil
 }
@@ -160,11 +166,11 @@ func (a *AccessInfo) ShouldSkipAuthzCheckForNonAADUsers() bool {
 	return a.skipAuthzForNonAADUsers
 }
 
-func (a *AccessInfo) GetResultFromCache(request *authzv1.SubjectAccessReviewSpec) (bool, bool) {
+func (a *AccessInfo) GetResultFromCache(request *authzv1.SubjectAccessReviewSpec, store authz.Store) (bool, bool) {
 	var result bool
 	key := getResultCacheKey(request)
 	glog.V(10).Infof("Cache search for key: %s", key)
-	found, _ := a.dataStore.Get(key, &result)
+	found, _ := store.Get(key, &result)
 	return found, result
 }
 
@@ -176,10 +182,10 @@ func (a *AccessInfo) SkipAuthzCheck(request *authzv1.SubjectAccessReviewSpec) bo
 	return false
 }
 
-func (a *AccessInfo) SetResultInCache(request *authzv1.SubjectAccessReviewSpec, result bool) error {
+func (a *AccessInfo) SetResultInCache(request *authzv1.SubjectAccessReviewSpec, result bool, store authz.Store) error {
 	key := getResultCacheKey(request)
 	glog.V(10).Infof("Cache set for key: %s, value: %t", key, result)
-	return a.dataStore.Set(key, result)
+	return store.Set(key, result)
 }
 
 func (a *AccessInfo) AllowNonResPathDiscoveryAccess(request *authzv1.SubjectAccessReviewSpec) bool {
@@ -271,11 +277,5 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	}
 
 	// Decode response and prepare k8s response
-	response, err := ConvertCheckAccessResponse(data)
-	if err == nil {
-		_ = a.SetResultInCache(request, response.Allowed)
-	} else {
-		_ = a.SetResultInCache(request, false)
-	}
-	return response, err
+	return ConvertCheckAccessResponse(data)
 }
