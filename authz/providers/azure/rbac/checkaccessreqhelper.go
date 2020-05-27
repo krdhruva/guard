@@ -205,16 +205,19 @@ func getDataAction(subRevReq *authzv1.SubjectAccessReviewSpec, clusterType strin
 	return authInfo
 }
 
+func defaultDir(s string) string {
+	if s != "" {
+		return s
+	}
+	return "-" // invalid for a namespace
+}
+
 func getResultCacheKey(subRevReq *authzv1.SubjectAccessReviewSpec) string {
 	cacheKey := subRevReq.User
 
 	if subRevReq.ResourceAttributes != nil {
-		if subRevReq.ResourceAttributes.Namespace != "" {
-			cacheKey = path.Join(cacheKey, subRevReq.ResourceAttributes.Namespace)
-		}
-		if subRevReq.ResourceAttributes.Group != "" {
-			cacheKey = path.Join(cacheKey, subRevReq.ResourceAttributes.Group)
-		}
+		cacheKey = path.Join(cacheKey, defaultDir(subRevReq.ResourceAttributes.Namespace))
+		cacheKey = path.Join(cacheKey, defaultDir(subRevReq.ResourceAttributes.Group))
 		cacheKey = path.Join(cacheKey, subRevReq.ResourceAttributes.Resource, getActionName(subRevReq.ResourceAttributes.Verb))
 	} else if subRevReq.NonResourceAttributes != nil {
 		cacheKey = path.Join(cacheKey, subRevReq.NonResourceAttributes.Path, getActionName(subRevReq.NonResourceAttributes.Verb))
@@ -318,9 +321,9 @@ func ConvertCheckAccessResponse(body []byte) (*authzv1.SubjectAccessReviewStatus
 	)
 
 	if glog.V(10) {
-                binaryData, _ := json.MarshalIndent(response, "", "    ")
-                glog.V(10).Infof("check access response:%s", binaryData)
-        }
+		binaryData, _ := json.MarshalIndent(response, "", "    ")
+		glog.V(10).Infof("check access response:%s", binaryData)
+	}
 
 	err := json.Unmarshal(body, &response)
 	if err != nil {

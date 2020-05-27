@@ -37,15 +37,19 @@ import (
 )
 
 const (
-	managedClusters         = "Microsoft.ContainerService/managedClusters"
-	connectedClusters       = "Microsoft.Kubernetes/connectedClusters"
-	checkAccessPath         = "/providers/Microsoft.Authorization/checkaccess"
-	checkAccessAPIVersion   = "2018-09-01-preview"
-	remainingSubReadARMHeader = "x-ms-ratelimit-remaining-subscription-reads"
-	expiryDelta             = 60 * time.Second
+	managedClusters                       = "Microsoft.ContainerService/managedClusters"
+	connectedClusters                     = "Microsoft.Kubernetes/connectedClusters"
+	checkAccessPath                       = "/providers/Microsoft.Authorization/checkaccess"
+	checkAccessAPIVersion                 = "2018-09-01-preview"
+	remainingSubReadARMHeader             = "x-ms-ratelimit-remaining-subscription-reads"
+	expiryDelta                           = 60 * time.Second
+	ARCCluster                ClusterType = "arc"
+	AKSCluster                ClusterType = "aks"
 )
 
 type void struct{}
+
+type ClusterType string
 
 // AccessInfo allows you to check user access from MS RBAC
 type AccessInfo struct {
@@ -55,30 +59,41 @@ type AccessInfo struct {
 	// These allow us to mock out the URL for testing
 	apiURL *url.URL
 
-	tokenProvider            graph.TokenProvider
-	clusterType              string
-	azureResourceId          string
-	armCallLimit             int
-	dataStore                authz.Store
-	skipCheck                map[string]void
-	retrieveGroupMemberships bool
-	skipAuthzForNonAADUsers  bool
+	tokenProvider                  graph.TokenProvider
+	clusterType                    string
+	azureResourceId                string
+	armCallLimit                   int
+	dataStore                      authz.Store
+	skipCheck                      map[string]void
+	retrieveGroupMemberships       bool
+	skipAuthzForNonAADUsers        bool
 	allowNonResDiscoveryPathAccess bool
 }
 
-func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clusterType, resourceId string, armCallLimit int, dataStore authz.Store, skipList []string, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess bool) (*AccessInfo, error) {
+func getClusterTypeString(t ClusterType) string {
+	switch t {
+	case ARCCluster:
+		return connectedClusters
+	case AKSCluster:
+		return managedClusters
+	default:
+		return ""
+	}
+}
+
+func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, resourceId string, clsType ClusterType, armCallLimit int, dataStore authz.Store, skipList []string, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess bool) (*AccessInfo, error) {
 	u := &AccessInfo{
 		client: http.DefaultClient,
 		headers: http.Header{
 			"Content-Type": []string{"application/json"},
 		},
-		apiURL:                   rbacURL,
-		tokenProvider:            tokenProvider,
-		azureResourceId:          resourceId,
-		armCallLimit:             armCallLimit,
-		dataStore:                dataStore,
-		retrieveGroupMemberships: retrieveGroupMemberships,
-		skipAuthzForNonAADUsers:  skipAuthzForNonAADUsers,
+		apiURL:                         rbacURL,
+		tokenProvider:                  tokenProvider,
+		azureResourceId:                resourceId,
+		armCallLimit:                   armCallLimit,
+		dataStore:                      dataStore,
+		retrieveGroupMemberships:       retrieveGroupMemberships,
+		skipAuthzForNonAADUsers:        skipAuthzForNonAADUsers,
 		allowNonResDiscoveryPathAccess: allowNonResDiscoveryPathAccess,
 	}
 
@@ -88,18 +103,12 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clusterT
 		u.skipCheck[strings.ToLower(s)] = member
 	}
 
-	if clusterType == "arc" {
-		u.clusterType = connectedClusters
-	}
-
-	if clusterType == "aks" {
-		u.clusterType = managedClusters
-	}
+	u.clusterType = getClusterTypeString(clsType)
 
 	return u, nil
 }
 
-func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore authz.Store, skipCheck []string, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess bool) (*AccessInfo, error) {
+func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, resourceId string, clsType ClusterType, armCallLimit int, dataStore authz.Store, skipCheck []string, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess bool) (*AccessInfo, error) {
 	rbacURL, err := url.Parse(armEndPoint)
 
 	if err != nil {
@@ -110,10 +119,10 @@ func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType
 		fmt.Sprintf("%s%s/oauth2/v2.0/token", aadEndpoint, tenantID),
 		fmt.Sprintf("%s.default", armEndPoint))
 
-	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore, skipCheck, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess)
+	return newAccessInfo(tokenProvider, rbacURL, resourceId, clsType, armCallLimit, dataStore, skipCheck, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess)
 }
 
-func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore authz.Store, skipCheck []string, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess bool) (*AccessInfo, error) {
+func NewWithAKS(tokenURL, tenantID, armEndPoint, resourceId string, clsType ClusterType, armCallLimit int, dataStore authz.Store, skipCheck []string, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess bool) (*AccessInfo, error) {
 	rbacURL, err := url.Parse(armEndPoint)
 
 	if err != nil {
@@ -121,7 +130,7 @@ func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string,
 	}
 	tokenProvider := graph.NewAKSTokenProvider(tokenURL, tenantID)
 
-	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore, skipCheck, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess)
+	return newAccessInfo(tokenProvider, rbacURL, resourceId, clsType, armCallLimit, dataStore, skipCheck, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess)
 }
 
 func (a *AccessInfo) RefreshToken() error {
