@@ -71,11 +71,16 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 		return nil, errors.New("subject access review is nil")
 	}
 
-	// check if user is service account
+	// check if user is system accounts
 	if strings.HasPrefix(strings.ToLower(request.User), "system") {
-		glog.V(3).Infof("returning no op to service accounts")
+		glog.V(3).Infof("returning no op to system accounts")
 		return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: rbac.NoOpinionVerdict}, nil
 	}
+
+	if s.rbacClient.SkipAuthzCheck(request) {
+                glog.V(3).Infof("user %s is part of skip authz list. returning no op.", request.User)
+                return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: rbac.NoOpinionVerdict}, nil
+        }
 
 	if _, ok := request.Extra["oid"]; !ok {
 		if s.rbacClient.ShouldSkipAuthzCheckForNonAADUsers() {
@@ -87,18 +92,13 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 		}
 	}
 
-	if s.rbacClient.SkipAuthzCheck(request) {
-		glog.V(3).Infof("user %s is part of skip authz list. returning no op.", request.User)
-		return &authzv1.SubjectAccessReviewStatus{Allowed: false, Reason: rbac.NoOpinionVerdict}, nil
-	}
-
 	exist, result := s.rbacClient.GetResultFromCache(request)
 	if exist {
 		if result {
-			glog.V(3).Infof("cache hit: returning allowed to user")
+			glog.V(3).Infof("cache hit: returning allowed to user %s", request.User)
 			return &authzv1.SubjectAccessReviewStatus{Allowed: result, Reason: rbac.AccessAllowedVerdict}, nil
 		} else {
-			glog.V(3).Infof("cache hit: returning denied to user")
+			glog.V(3).Infof("cache hit: returning denied to user %s", request.User)
 			return &authzv1.SubjectAccessReviewStatus{Allowed: result, Denied: true, Reason: rbac.AccessNotAllowedVerdict}, nil
 		}
 	}

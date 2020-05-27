@@ -27,9 +27,9 @@ type orgs []string
 var SupportedOrgs orgs
 
 func (o orgs) Has(name string) bool {
-	name = strings.TrimSpace(strings.ToLower(name))
+	name = strings.TrimSpace(name)
 	for _, org := range o {
-		if org == name {
+		if strings.EqualFold(name, org) {
 			return true
 		}
 	}

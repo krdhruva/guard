@@ -95,15 +95,14 @@ func (o *Options) Validate(azure azure.Options) []error {
 	}
 
 	if o.ARMCallLimit > maxPermissibleArmCallLimit {
-		errs = append(errs, errors.New("azure.arm-call-limit must not be more than 4000"))
+		errs = append(errs, fmt.Errorf("azure.arm-call-limit must not be more than %d", maxPermissibleArmCallLimit))
 	}
 
 	return errs
 }
 
 func (o Options) Apply(d *apps.Deployment) (extraObjs []runtime.Object, err error) {
-	container := d.Spec.Template.Spec.Containers[0]
-	args := container.Args
+	args := d.Spec.Template.Spec.Containers[0].Args
 	switch o.AuthzMode {
 	case AKSAuthzMode:
 		fallthrough
@@ -127,7 +126,6 @@ func (o Options) Apply(d *apps.Deployment) (extraObjs []runtime.Object, err erro
 
 	args = append(args, fmt.Sprintf("--azure.allow-nonres-discovery-path-access=%t", o.AllowNonResDiscoveryPathAccess))
 
-	container.Args = args
-	d.Spec.Template.Spec.Containers[0] = container
+	d.Spec.Template.Spec.Containers[0].Args = args
 	return extraObjs, nil
 }

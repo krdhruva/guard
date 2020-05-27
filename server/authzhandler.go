@@ -53,8 +53,7 @@ func (s *Authzhandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	binaryData, _ := json.MarshalIndent(&data, "", "    ")
-	glog.V(10).Infof("Authz req:%s", binaryData)
+	glog.V(10).Infof("Authz req:%s", data)
 
 	if !s.AuthzRecommendedOptions.AuthzProvider.Has(org) {
 		writeAuthzResponse(w, &data.Spec, nil, WithCode(errors.Errorf("guard does not provide service for %v", org), http.StatusBadRequest))

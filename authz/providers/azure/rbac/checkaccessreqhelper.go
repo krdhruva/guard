@@ -146,11 +146,13 @@ func getValidSecurityGroups(groups []string) []string {
 }
 
 func getActionName(verb string) string {
-	/* special verbs
-	use verb on podsecuritypolicies resources in the policy API group
-	bind and escalate verbs on roles and clusterroles resources in the rbac.authorization.k8s.io API group
-	impersonate verb on users, groups, and serviceaccounts in the core API group
-	userextras in the authentication.k8s.io API group
+	/* Kubernetes supprots some special verbs for which we need to return data action /verb/action.
+	Following is the list of special verbs and their API group/resources in Kubernetes:
+	use:policy/podsecuritypolicies
+	bind:rbac.authorization.k8s.io/roles,clusterroles
+	escalate:rbac.authorization.k8s.io/roles,clusterroles
+	impersonate:core/users,groups,serviceaccounts
+	impersonate:authentication.k8s.io/userextras
 
 	https://kubernetes.io/docs/reference/access-authn-authz/authorization/#determine-the-request-verb
 	*/
@@ -314,15 +316,16 @@ func ConvertCheckAccessResponse(body []byte) (*authzv1.SubjectAccessReviewStatus
 		denied   bool
 		verdict  string
 	)
+
+	if glog.V(10) {
+                binaryData, _ := json.MarshalIndent(response, "", "    ")
+                glog.V(10).Infof("check access response:%s", binaryData)
+        }
+
 	err := json.Unmarshal(body, &response)
 	if err != nil {
 		glog.V(10).Infof("Failed to parse checkacccess response. Error:%s", err.Error())
 		return nil, errors.Wrap(err, "Error in unmarshalling check access response.")
-	}
-
-	if glog.V(10) {
-		binaryData, _ := json.MarshalIndent(response, "", "    ")
-		glog.Infof("check access response:%s", binaryData)
 	}
 
 	if strings.ToLower(response[0].Decision) == Allowed {

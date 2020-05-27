@@ -41,7 +41,7 @@ const (
 	connectedClusters       = "Microsoft.Kubernetes/connectedClusters"
 	checkAccessPath         = "/providers/Microsoft.Authorization/checkaccess"
 	checkAccessAPIVersion   = "2018-09-01-preview"
-	remaingSubReadARMHeader = "x-ms-ratelimit-remaining-subscription-reads"
+	remainingSubReadARMHeader = "x-ms-ratelimit-remaining-subscription-reads"
 	expiryDelta             = 60 * time.Second
 )
 
@@ -66,7 +66,7 @@ type AccessInfo struct {
 	allowNonResDiscoveryPathAccess bool
 }
 
-func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterType, resourceId string, armCallLimit int, dataStore authz.Store, skipList []string, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess bool) (*AccessInfo, error) {
+func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clusterType, resourceId string, armCallLimit int, dataStore authz.Store, skipList []string, retrieveGroupMemberships, skipAuthzForNonAADUsers, allowNonResDiscoveryPathAccess bool) (*AccessInfo, error) {
 	u := &AccessInfo{
 		client: http.DefaultClient,
 		headers: http.Header{
@@ -79,7 +79,8 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterT
 		dataStore:                dataStore,
 		retrieveGroupMemberships: retrieveGroupMemberships,
 		skipAuthzForNonAADUsers:  skipAuthzForNonAADUsers,
-		allowNonResDiscoveryPathAccess: allowNonResDiscoveryPathAccess}
+		allowNonResDiscoveryPathAccess: allowNonResDiscoveryPathAccess,
+	}
 
 	u.skipCheck = make(map[string]void, len(skipList))
 	var member void
@@ -87,11 +88,11 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterT
 		u.skipCheck[strings.ToLower(s)] = member
 	}
 
-	if clsuterType == "arc" {
+	if clusterType == "arc" {
 		u.clusterType = connectedClusters
 	}
 
-	if clsuterType == "aks" {
+	if clusterType == "aks" {
 		u.clusterType = managedClusters
 	}
 
@@ -173,7 +174,7 @@ func (a *AccessInfo) SetResultInCache(request *authzv1.SubjectAccessReviewSpec, 
 }
 
 func (a *AccessInfo) AllowNonResPathDiscoveryAccess(request *authzv1.SubjectAccessReviewSpec) bool {
-	if a.allowNonResDiscoveryPathAccess && request.NonResourceAttributes != nil && strings.ToLower(request.NonResourceAttributes.Verb) == "get" {
+	if request.NonResourceAttributes != nil && a.allowNonResDiscoveryPathAccess && strings.ToLower(request.NonResourceAttributes.Verb) == "get" {
 		path := strings.ToLower(request.NonResourceAttributes.Path)
 		if strings.HasPrefix(path, "/api") || strings.HasPrefix(path, "/openapi") || strings.HasPrefix(path, "/version") || strings.HasPrefix(path, "/healthz") {
 			return true
@@ -246,14 +247,14 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 		}
 		return nil, errors.Errorf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
 	} else {
-		remaining := resp.Header.Get(remaingSubReadARMHeader)
+		remaining := resp.Header.Get(remainingSubReadARMHeader)
 		glog.Infof("Remaining request count in ARM instance:%s", remaining)
 		count, _ := strconv.Atoi(remaining)
 		if count < a.armCallLimit {
 			if glog.V(10) {
 				glog.V(10).Infoln("Closing idle TCP connections.")
 			}
-			// Usually ARM connections are cached by destinatio ip and port
+			// Usually ARM connections are cached by destination ip and port
 			// By closing the idle connection, a new request will use different port which
 			// will connect to different ARM instance of the region to ensure there is no ARM throttling
 			a.client.CloseIdleConnections()
