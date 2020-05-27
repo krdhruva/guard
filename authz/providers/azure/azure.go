@@ -21,6 +21,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure"
 	auth "github.com/appscode/guard/auth/providers/azure"
 	"github.com/appscode/guard/authz"
+	authzOpts "github.com/appscode/guard/authz/providers/azure/options"
 	"github.com/appscode/guard/authz/providers/azure/rbac"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -39,12 +40,7 @@ type Authorizer struct {
 	rbacClient *rbac.AccessInfo
 }
 
-type authzInfo struct {
-	AADEndpoint string
-	ARMEndPoint string
-}
-
-func New(opts Options, authopts auth.Options, dataStore authz.Store) (authz.Interface, error) {
+func New(opts authzOpts.Options, authopts auth.Options, dataStore authz.Store) (authz.Interface, error) {
 	c := &Authorizer{}
 
 	authzInfoVal, err := getAuthzInfo(authopts.Environment)
@@ -52,12 +48,7 @@ func New(opts Options, authopts auth.Options, dataStore authz.Store) (authz.Inte
 		return nil, errors.Wrap(err, "Error in getAuthzInfo %s")
 	}
 
-	switch opts.AuthzMode {
-	case ARCAuthzMode:
-		c.rbacClient, err = rbac.New(authopts.ClientID, authopts.ClientSecret, authopts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore, opts.SkipAuthzCheck, opts.AuthzResolveGroupMemberships, opts.SkipAuthzForNonAADUsers)
-	case AKSAuthzMode:
-		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, authopts.TenantID, authzInfoVal.ARMEndPoint, opts.AuthzMode, opts.ResourceId, opts.ARMCallLimit, dataStore, opts.SkipAuthzCheck, opts.AuthzResolveGroupMemberships, opts.SkipAuthzForNonAADUsers)
-	}
+        c.rbacClient, err = rbac.New(opts, authopts, authzInfoVal, dataStore)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create ms rbac client")
@@ -113,7 +104,7 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec) (*authzv1.Su
 	return s.rbacClient.CheckAccess(request)
 }
 
-func getAuthzInfo(environment string) (*authzInfo, error) {
+func getAuthzInfo(environment string) (*authz.AuthzInfo, error) {
 	var err error
 	env := azure.PublicCloud
 	if environment != "" {
@@ -123,7 +114,7 @@ func getAuthzInfo(environment string) (*authzInfo, error) {
 		}
 	}
 
-	return &authzInfo{
+	return &authz.AuthzInfo{
 		AADEndpoint: env.ActiveDirectoryEndpoint,
 		ARMEndPoint: env.ResourceManagerEndpoint,
 	}, nil

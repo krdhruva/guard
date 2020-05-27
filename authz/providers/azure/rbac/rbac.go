@@ -27,8 +27,10 @@ import (
 	"strings"
 	"time"
 
+	auth "github.com/appscode/guard/auth/providers/azure"
 	"github.com/appscode/guard/auth/providers/azure/graph"
-	"github.com/appscode/guard/authz"
+        "github.com/appscode/guard/authz"
+	authzOpts "github.com/appscode/guard/authz/providers/azure/options"
 	"github.com/golang/glog"
 	"github.com/moul/http2curl"
 	"github.com/pkg/errors"
@@ -64,7 +66,7 @@ type AccessInfo struct {
 	skipAuthzForNonAADUsers  bool
 }
 
-func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterType, resourceId string, armCallLimit int, dataStore authz.Store, skipList []string, retrieveGroupMemberships, skipAuthzForNonAADUsers bool) (*AccessInfo, error) {
+func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, opts authzOpts.Options, authopts auth.Options, dataStore authz.Store) (*AccessInfo, error) {
 	u := &AccessInfo{
 		client: http.DefaultClient,
 		headers: http.Header{
@@ -72,52 +74,46 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, clsuterT
 		},
 		apiURL:                   rbacURL,
 		tokenProvider:            tokenProvider,
-		azureResourceId:          resourceId,
-		armCallLimit:             armCallLimit,
+		azureResourceId:          opts.ResourceId,
+		armCallLimit:             opts.ARMCallLimit,
 		dataStore:                dataStore,
-		retrieveGroupMemberships: retrieveGroupMemberships,
-		skipAuthzForNonAADUsers:  skipAuthzForNonAADUsers}
+		retrieveGroupMemberships: opts.AuthzResolveGroupMemberships,
+		skipAuthzForNonAADUsers:  opts.SkipAuthzForNonAADUsers}
 
-	u.skipCheck = make(map[string]void, len(skipList))
+	u.skipCheck = make(map[string]void, len(opts.SkipAuthzCheck))
 	var member void
-	for _, s := range skipList {
+	for _, s := range opts.SkipAuthzCheck {
 		u.skipCheck[strings.ToLower(s)] = member
 	}
 
-	if clsuterType == "arc" {
-		u.clusterType = connectedClusters
-	}
-
-	if clsuterType == "aks" {
+	switch opts.AuthzMode {
+	case authzOpts.ARCAuthzMode:
+	        u.clusterType = connectedClusters
+	case authzOpts.AKSAuthzMode:
 		u.clusterType = managedClusters
 	}
 
 	return u, nil
 }
 
-func New(clientID, clientSecret, tenantID, aadEndpoint, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore authz.Store, skipCheck []string, retrieveGroupMemberships, skipAuthzForNonAADUsers bool) (*AccessInfo, error) {
-	rbacURL, err := url.Parse(armEndPoint)
+func New(opts authzOpts.Options, authopts auth.Options, authzInfo *authz.AuthzInfo, dataStore authz.Store) (*AccessInfo, error) {
+	rbacURL, err := url.Parse(authzInfo.ARMEndPoint)
 
 	if err != nil {
 		return nil, err
 	}
 
-	tokenProvider := graph.NewClientCredentialTokenProvider(clientID, clientSecret,
-		fmt.Sprintf("%s%s/oauth2/v2.0/token", aadEndpoint, tenantID),
-		fmt.Sprintf("%s.default", armEndPoint))
-
-	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore, skipCheck, retrieveGroupMemberships, skipAuthzForNonAADUsers)
-}
-
-func NewWithAKS(tokenURL, tenantID, armEndPoint, clusterType, resourceId string, armCallLimit int, dataStore authz.Store, skipCheck []string, retrieveGroupMemberships, skipAuthzForNonAADUsers bool) (*AccessInfo, error) {
-	rbacURL, err := url.Parse(armEndPoint)
-
-	if err != nil {
-		return nil, err
+	var tokenProvider graph.TokenProvider
+	switch opts.AuthzMode {
+	case authzOpts.ARCAuthzMode:
+            tokenProvider = graph.NewClientCredentialTokenProvider(authopts.ClientID, authopts.ClientSecret,
+		fmt.Sprintf("%s%s/oauth2/v2.0/token", authzInfo.AADEndpoint, authopts.TenantID),
+		fmt.Sprintf("%s.default", authzInfo.ARMEndPoint))
+	case authzOpts.AKSAuthzMode:
+            tokenProvider = graph.NewAKSTokenProvider(opts.AKSAuthzURL, authopts.TenantID)
 	}
-	tokenProvider := graph.NewAKSTokenProvider(tokenURL, tenantID)
 
-	return newAccessInfo(tokenProvider, rbacURL, clusterType, resourceId, armCallLimit, dataStore, skipCheck, retrieveGroupMemberships, skipAuthzForNonAADUsers)
+	return newAccessInfo(tokenProvider, rbacURL, opts, authopts, dataStore)
 }
 
 func (a *AccessInfo) RefreshToken() error {
