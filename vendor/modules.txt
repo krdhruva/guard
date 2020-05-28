@@ -18,11 +18,7 @@ github.com/PuerkitoBio/urlesc
 # github.com/allegro/bigcache v1.2.1
 github.com/allegro/bigcache
 github.com/allegro/bigcache/queue
-<<<<<<< HEAD
-# github.com/appscode/go v0.0.0-20191119085241-0887d8ec2ecc
-=======
 # github.com/appscode/go v0.0.0-20200323182826-54e98e09185a
->>>>>>> master
 github.com/appscode/go/analytics
 github.com/appscode/go/context
 github.com/appscode/go/crypto/rand
