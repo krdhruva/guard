@@ -320,11 +320,6 @@ func ConvertCheckAccessResponse(body []byte) (*authzv1.SubjectAccessReviewStatus
 		verdict  string
 	)
 
-	if glog.V(10) {
-		binaryData, _ := json.MarshalIndent(response, "", "    ")
-		glog.V(10).Infof("check access response:%s", binaryData)
-	}
-
 	err := json.Unmarshal(body, &response)
 	if err != nil {
 		glog.V(10).Infof("Failed to parse checkacccess response. Error:%s", err.Error())
