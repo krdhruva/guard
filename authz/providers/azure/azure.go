@@ -54,7 +54,8 @@ type authzInfo struct {
 
 func New(opts Options, authopts auth.Options) (authz.Interface, error) {
 	once.Do(func() {
-		client, err := newAuthzClient(opts, authopts)
+		glog.Info("Creating Azure global authz client")
+		client, err = newAuthzClient(opts, authopts)
 		if client == nil || err != nil {
 			glog.Fatalf("Authz RBAC client creation failed. Error: %s", err)
 		}
@@ -81,7 +82,7 @@ func newAuthzClient(opts Options, authopts auth.Options) (authz.Interface, error
 		return nil, errors.Wrap(err, "failed to create ms rbac client")
 	}
 
-	return client, nil
+	return c, nil
 }
 
 func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec, store authz.Store) (*authzv1.SubjectAccessReviewStatus, error) {

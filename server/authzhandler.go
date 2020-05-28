@@ -53,7 +53,7 @@ func (s *Authzhandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	glog.V(10).Infof("Authz req:%s", data)
+	glog.V(10).Infof("Authz req:%+v\n", data)
 
 	if !s.AuthzRecommendedOptions.AuthzProvider.Has(org) {
 		writeAuthzResponse(w, &data.Spec, nil, WithCode(errors.Errorf("guard does not provide service for %v", org), http.StatusBadRequest))
@@ -61,7 +61,7 @@ func (s *Authzhandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	client, err := s.getAuthzProviderClient(org)
-	if err != nil {
+	if client == nil || err != nil {
 		writeAuthzResponse(w, &data.Spec, nil, err)
 		return
 	}
