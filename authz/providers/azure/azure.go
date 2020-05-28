@@ -19,11 +19,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Azure/go-autorest/autorest/azure"
 	auth "github.com/appscode/guard/auth/providers/azure"
 	"github.com/appscode/guard/authz"
 	authzOpts "github.com/appscode/guard/authz/providers/azure/options"
 	"github.com/appscode/guard/authz/providers/azure/rbac"
+
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	authzv1 "k8s.io/api/authorization/v1"

@@ -33,23 +33,23 @@ const (
 )
 
 type Options struct {
-	AuthzMode                    	string
-	ResourceId                   	string
-	AKSAuthzURL                  	string
-	ARMCallLimit                 	int
-	SkipAuthzCheck               	[]string
-	AuthzResolveGroupMemberships 	bool
-	SkipAuthzForNonAADUsers      	bool
-	AllowNonResDiscoveryPathAccess	bool
+	AuthzMode                      string
+	ResourceId                     string
+	AKSAuthzURL                    string
+	ARMCallLimit                   int
+	SkipAuthzCheck                 []string
+	AuthzResolveGroupMemberships   bool
+	SkipAuthzForNonAADUsers        bool
+	AllowNonResDiscoveryPathAccess bool
 }
 
 func NewOptions() Options {
 	return Options{
-		ARMCallLimit:                  defaultArmCallLimit,
-		SkipAuthzCheck:		       []string{""},
-		AuthzResolveGroupMemberships:  true,
-		SkipAuthzForNonAADUsers:       true,
-		AllowNonResDiscoveryPathAccess:true}
+		ARMCallLimit:                   defaultArmCallLimit,
+		SkipAuthzCheck:                 []string{""},
+		AuthzResolveGroupMemberships:   true,
+		SkipAuthzForNonAADUsers:        true,
+		AllowNonResDiscoveryPathAccess: true}
 }
 
 func (o *Options) AddFlags(fs *pflag.FlagSet) {
