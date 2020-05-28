@@ -85,7 +85,7 @@ func getClusterType(clsType string) string {
 	}
 }
 
-func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, opts authzOpts.Options, authopts auth.Options) (*AccessInfo, error) {
+func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, opts authzOpts.Options) (*AccessInfo, error) {
 	u := &AccessInfo{
 		client: http.DefaultClient,
 		headers: http.Header{
@@ -128,7 +128,7 @@ func New(opts authzOpts.Options, authopts auth.Options, authzInfo *AuthzInfo) (*
 		tokenProvider = graph.NewAKSTokenProvider(opts.AKSAuthzURL, authopts.TenantID)
 	}
 
-	return newAccessInfo(tokenProvider, rbacURL, opts, authopts)
+	return newAccessInfo(tokenProvider, rbacURL, opts)
 }
 
 func (a *AccessInfo) RefreshToken() error {
