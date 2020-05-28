@@ -22,7 +22,7 @@ import (
 	auth "github.com/appscode/guard/auth/providers/azure"
 	"github.com/appscode/guard/authz"
 	"github.com/appscode/guard/authz/providers/azure/rbac"
-
+        authzOpts "github.com/appscode/guard/authz/providers/azure/options"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -47,12 +47,7 @@ type Authorizer struct {
 	rbacClient *rbac.AccessInfo
 }
 
-type authzInfo struct {
-	AADEndpoint string
-	ARMEndPoint string
-}
-
-func New(opts Options, authopts auth.Options) (authz.Interface, error) {
+func New(opts authzOpts.Options, authopts auth.Options) (authz.Interface, error) {
 	once.Do(func() {
 		glog.Info("Creating Azure global authz client")
 		client, err = newAuthzClient(opts, authopts)
@@ -63,7 +58,7 @@ func New(opts Options, authopts auth.Options) (authz.Interface, error) {
 	return client, err
 }
 
-func newAuthzClient(opts Options, authopts auth.Options) (authz.Interface, error) {
+func newAuthzClient(opts authzOpts.Options, authopts auth.Options) (authz.Interface, error) {
 	c := &Authorizer{}
 
 	authzInfoVal, err := getAuthzInfo(authopts.Environment)
@@ -71,12 +66,7 @@ func newAuthzClient(opts Options, authopts auth.Options) (authz.Interface, error
 		return nil, errors.Wrap(err, "Error in getAuthzInfo %s")
 	}
 
-	switch opts.AuthzMode {
-	case ARCAuthzMode:
-		c.rbacClient, err = rbac.New(authopts.ClientID, authopts.ClientSecret, authopts.TenantID, authzInfoVal.AADEndpoint, authzInfoVal.ARMEndPoint, opts.ResourceId, rbac.ARCCluster, opts.ARMCallLimit, opts.SkipAuthzCheck, opts.AuthzResolveGroupMemberships, opts.SkipAuthzForNonAADUsers, opts.AllowNonResDiscoveryPathAccess)
-	case AKSAuthzMode:
-		c.rbacClient, err = rbac.NewWithAKS(opts.AKSAuthzURL, authopts.TenantID, authzInfoVal.ARMEndPoint, opts.ResourceId, rbac.AKSCluster, opts.ARMCallLimit, opts.SkipAuthzCheck, opts.AuthzResolveGroupMemberships, opts.SkipAuthzForNonAADUsers, opts.AllowNonResDiscoveryPathAccess)
-	}
+	c.rbacClient, err = rbac.New(opts, authopts, authzInfoVal)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create ms rbac client")
@@ -142,7 +132,7 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec, store authz.
 	return response, err
 }
 
-func getAuthzInfo(environment string) (*authzInfo, error) {
+func getAuthzInfo(environment string) (*authz.AuthzInfo, error) {
 	var err error
 	env := azure.PublicCloud
 	if environment != "" {
@@ -152,7 +142,7 @@ func getAuthzInfo(environment string) (*authzInfo, error) {
 		}
 	}
 
-	return &authzInfo{
+	return &authz.AuthzInfo{
 		AADEndpoint: env.ActiveDirectoryEndpoint,
 		ARMEndPoint: env.ResourceManagerEndpoint,
 	}, nil

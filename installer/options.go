@@ -27,7 +27,7 @@ import (
 	"github.com/appscode/guard/auth/providers/token"
 	authz "github.com/appscode/guard/authz/providers"
 	azureauthz "github.com/appscode/guard/authz/providers/azure"
-
+	authzOpts "github.com/appscode/guard/authz/providers/azure/options"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,7 +52,7 @@ type AuthOptions struct {
 
 type AuthzOptions struct {
 	AuthzProvider authz.AuthzProviders
-	Azure         azureauthz.Options
+	Azure         authzOpts.Options
 }
 
 func NewAuthOptions() AuthOptions {
@@ -73,7 +73,7 @@ func NewAuthOptions() AuthOptions {
 
 func NewAuthzOptions() AuthzOptions {
 	return AuthzOptions{
-		Azure: azureauthz.NewOptions(),
+		Azure: authzOpts.NewOptions(),
 	}
 }
 
