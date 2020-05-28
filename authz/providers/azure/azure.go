@@ -19,11 +19,11 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/Azure/go-autorest/autorest/azure"
 	auth "github.com/appscode/guard/auth/providers/azure"
 	"github.com/appscode/guard/authz"
+	authzOpts "github.com/appscode/guard/authz/providers/azure/options"
 	"github.com/appscode/guard/authz/providers/azure/rbac"
-        authzOpts "github.com/appscode/guard/authz/providers/azure/options"
-	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	authzv1 "k8s.io/api/authorization/v1"
@@ -67,7 +67,6 @@ func newAuthzClient(opts authzOpts.Options, authopts auth.Options) (authz.Interf
 	}
 
 	c.rbacClient, err = rbac.New(opts, authopts, authzInfoVal)
-
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create ms rbac client")
 	}
@@ -112,8 +111,9 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec, store authz.
 		}
 	}
 
+	// if set true, webhook will allow access to discovery APIs for authenticated users. If false, access check will be performed on Azure.
 	if s.rbacClient.AllowNonResPathDiscoveryAccess(request) {
-		glog.V(3).Infof("Allowing request to user %s for discovery check.", request.User)
+		glog.V(3).Infof("Allowing user %s access for discovery check.", request.User)
 		_ = s.rbacClient.SetResultInCache(request, true, store)
 		return &authzv1.SubjectAccessReviewStatus{Allowed: true, Reason: rbac.AccessAllowedVerdict}, nil
 	}
@@ -132,7 +132,7 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec, store authz.
 	return response, err
 }
 
-func getAuthzInfo(environment string) (*authz.AuthzInfo, error) {
+func getAuthzInfo(environment string) (*rbac.AuthzInfo, error) {
 	var err error
 	env := azure.PublicCloud
 	if environment != "" {
@@ -142,7 +142,7 @@ func getAuthzInfo(environment string) (*authz.AuthzInfo, error) {
 		}
 	}
 
-	return &authz.AuthzInfo{
+	return &rbac.AuthzInfo{
 		AADEndpoint: env.ActiveDirectoryEndpoint,
 		ARMEndPoint: env.ResourceManagerEndpoint,
 	}, nil

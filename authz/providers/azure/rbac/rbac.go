@@ -39,13 +39,18 @@ import (
 )
 
 const (
-	managedClusters                       = "Microsoft.ContainerService/managedClusters"
-	connectedClusters                     = "Microsoft.Kubernetes/connectedClusters"
-	checkAccessPath                       = "/providers/Microsoft.Authorization/checkaccess"
-	checkAccessAPIVersion                 = "2018-09-01-preview"
-	remainingSubReadARMHeader             = "x-ms-ratelimit-remaining-subscription-reads"
-	expiryDelta                           = 60 * time.Second
+	managedClusters           = "Microsoft.ContainerService/managedClusters"
+	connectedClusters         = "Microsoft.Kubernetes/connectedClusters"
+	checkAccessPath           = "/providers/Microsoft.Authorization/checkaccess"
+	checkAccessAPIVersion     = "2018-09-01-preview"
+	remainingSubReadARMHeader = "x-ms-ratelimit-remaining-subscription-reads"
+	expiryDelta               = 60 * time.Second
 )
+
+type AuthzInfo struct {
+	AADEndpoint string
+	ARMEndPoint string
+}
 
 type void struct{}
 
@@ -68,7 +73,7 @@ type AccessInfo struct {
 	lock                           *sync.Mutex
 }
 
-func getClusterTypeString(clsType string) string {
+func getClusterType(clsType string) string {
 	switch clsType {
 	case authzOpts.ARCAuthzMode:
 		return connectedClusters
@@ -100,15 +105,14 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, opts aut
 		u.skipCheck[strings.ToLower(s)] = member
 	}
 
-	u.clusterType = getClusterTypeString(opts.AuthzMode)
+	u.clusterType = getClusterType(opts.AuthzMode)
 	u.lock = &sync.Mutex{}
 
 	return u, nil
 }
 
-func New(opts authzOpts.Options, authopts auth.Options, authzInfo *authz.AuthzInfo) (*AccessInfo, error) {
+func New(opts authzOpts.Options, authopts auth.Options, authzInfo *AuthzInfo) (*AccessInfo, error) {
 	rbacURL, err := url.Parse(authzInfo.ARMEndPoint)
-
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +144,7 @@ func (a *AccessInfo) RefreshToken() error {
 		a.headers.Set("Authorization", fmt.Sprintf("Bearer %s", resp.Token))
 		expIn := time.Duration(resp.Expires) * time.Second
 		a.expiresAt = time.Now().Add(expIn - expiryDelta)
-		glog.Infof("Token refresh successful on %t. Expire at:%t", time.Now(), a.expiresAt)
+		glog.Infof("Token refreshed successfully on %s. Expire at:%s", time.Now(), a.expiresAt)
 	}
 
 	return nil
@@ -181,7 +185,7 @@ func (a *AccessInfo) SetResultInCache(request *authzv1.SubjectAccessReviewSpec, 
 }
 
 func (a *AccessInfo) AllowNonResPathDiscoveryAccess(request *authzv1.SubjectAccessReviewSpec) bool {
-	if request.NonResourceAttributes != nil && a.allowNonResDiscoveryPathAccess && strings.ToLower(request.NonResourceAttributes.Verb) == "get" {
+	if request.NonResourceAttributes != nil && a.allowNonResDiscoveryPathAccess && strings.EqualFold(request.NonResourceAttributes.Verb, "get") {
 		path := strings.ToLower(request.NonResourceAttributes.Path)
 		if strings.HasPrefix(path, "/api") || strings.HasPrefix(path, "/openapi") || strings.HasPrefix(path, "/version") || strings.HasPrefix(path, "/healthz") {
 			return true

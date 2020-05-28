@@ -55,8 +55,3 @@ type Store interface {
 	Delete(key string) error
 	Close() error
 }
-
-type AuthzInfo struct {
-	AADEndpoint string
-	ARMEndPoint string
-}
