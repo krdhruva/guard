@@ -33,6 +33,7 @@ import (
 	"github.com/appscode/guard/authz"
 	authzOpts "github.com/appscode/guard/authz/providers/azure/options"
 
+	v "github.com/appscode/go/version"
 	"github.com/golang/glog"
 	"github.com/moul/http2curl"
 	"github.com/pkg/errors"
@@ -90,6 +91,7 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, opts aut
 		client: http.DefaultClient,
 		headers: http.Header{
 			"Content-Type": []string{"application/json"},
+			"User-Agent":   []string{fmt.Sprintf("%s-%s-%s-%s", v.Version.Platform, v.Version.GoVersion, v.Version.Version, opts.AuthzMode)},
 		},
 		apiURL:                         rbacURL,
 		tokenProvider:                  tokenProvider,
