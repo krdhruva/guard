@@ -28,12 +28,12 @@ import (
 	"sync"
 	"time"
 
+	v "github.com/appscode/go/version"
 	auth "github.com/appscode/guard/auth/providers/azure"
 	"github.com/appscode/guard/auth/providers/azure/graph"
 	"github.com/appscode/guard/authz"
 	authzOpts "github.com/appscode/guard/authz/providers/azure/options"
 
-	v "github.com/appscode/go/version"
 	"github.com/golang/glog"
 	"github.com/moul/http2curl"
 	"github.com/pkg/errors"
