@@ -193,6 +193,13 @@ func (a *AccessInfo) AllowNonResPathDiscoveryAccess(request *authzv1.SubjectAcce
 	return false
 }
 
+func (a *AccessInfo) setReqHeaders(req *http.Request) {
+	a.lock.RLock()
+	defer a.lock.RUnlock()
+	// Set the auth headers for the request
+	req.Header = a.headers
+}
+
 func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*authzv1.SubjectAccessReviewStatus, error) {
 	checkAccessBody, err := prepareCheckAccessRequestBody(request, a.clusterType, a.azureResourceId, a.retrieveGroupMemberships)
 
@@ -229,12 +236,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 		return nil, errors.Wrap(err, "error creating check access request")
 	}
 
-	{
-		a.lock.RLock()
-		defer a.lock.RUnlock()
-		// Set the auth headers for the request
-		req.Header = a.headers
-	}
+	a.setReqHeaders(req)
 
 	if glog.V(10) {
 		cmd, _ := http2curl.GetCurlCommand(req)
