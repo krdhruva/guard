@@ -58,6 +58,10 @@ func init() {
 var (
 	// ErrorClaimNotFound indicates the given key was not found in the claims
 	ErrClaimNotFound = fmt.Errorf("claim not found")
+	AzureDogfood     = azure.Environment{
+		Name:                         "AzureDOGFOOD",
+		ActiveDirectoryEndpoint:      "https://login.windows-ppe.net/",
+	}
 )
 
 // claims represents a map of claims provided with a JWT
@@ -310,7 +314,9 @@ func (c claims) string(key string) (string, error) {
 func getAuthInfo(environment, tenantID string, getMetadata func(string, string) (*metadataJSON, error)) (*authInfo, error) {
 	var err error
 	env := azure.PublicCloud
-	if environment != "" {
+	if environment == "AZUREDOGFOOD" {
+		env = AzureDogfood
+	} else if environment != "" {
 		env, err = azure.EnvironmentFromName(environment)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse environment for azure")
