@@ -82,7 +82,7 @@ func (s Authorizer) Check(request *authzv1beta1.SubjectAccessReviewSpec, store a
 
 	// check if user is system accounts
 	if strings.HasPrefix(strings.ToLower(request.User), "system:") {
-		glog.V(3).Infof("returning no op to system accounts")
+		glog.V(10).Infof("returning no op to system accounts")
 		return &authzv1beta1.SubjectAccessReviewStatus{Allowed: false, Reason: rbac.NoOpinionVerdict}, nil
 	}
 

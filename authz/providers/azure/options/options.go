@@ -47,7 +47,7 @@ func NewOptions() Options {
 	return Options{
 		ARMCallLimit:                   defaultArmCallLimit,
 		SkipAuthzCheck:                 []string{""},
-		AuthzResolveGroupMemberships:   true,
+		AuthzResolveGroupMemberships:   false,
 		SkipAuthzForNonAADUsers:        true,
 		AllowNonResDiscoveryPathAccess: true}
 }
