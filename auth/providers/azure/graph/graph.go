@@ -30,12 +30,19 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/moul/http2curl"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 // These are the base URL endpoints for MS graph
 var (
 	json                  = jsoniter.ConfigCompatibleWithStandardLibrary
 	expandedGroupsPerCall = 500
+
+	getMemberGroupsFailed = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "guard_graph_failure_total",
+		Help: "Azure graph getMemberGroups call failed.",
+	})
 )
 
 const (
@@ -79,6 +86,7 @@ func (u *UserInfo) getGroupIDs(userPrincipal string) ([]string, error) {
 
 	resp, err := u.client.Do(req)
 	if err != nil {
+		getMemberGroupsFailed.Inc()
 		return nil, errors.Wrap(err, "error listing users")
 	}
 	defer resp.Body.Close()

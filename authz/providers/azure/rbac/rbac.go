@@ -37,6 +37,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/moul/http2curl"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	authzv1beta1 "k8s.io/api/authorization/v1beta1"
 )
 
@@ -74,6 +76,13 @@ type AccessInfo struct {
 	allowNonResDiscoveryPathAccess bool
 	lock                           sync.RWMutex
 }
+
+var (
+	checkAccessFailed = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "guard_checkaccess_throttling_failure_total",
+		Help: "Azure checkaccess call throttled.",
+	})
+)
 
 func getClusterType(clsType string) string {
 	switch clsType {
@@ -266,7 +275,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1beta1.SubjectAccessReviewSpec) 
 		if resp.StatusCode == http.StatusTooManyRequests {
 			glog.V(10).Infoln("Closing idle TCP connections.")
 			a.client.CloseIdleConnections()
-			// TODO: add prom metrics for this scenario
+			checkAccessFailed.Inc()
 		}
 		return nil, errors.Errorf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
 	} else {
