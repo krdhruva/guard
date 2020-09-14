@@ -69,7 +69,6 @@ type AccessInfo struct {
 	azureResourceId                string
 	armCallLimit                   int
 	skipCheck                      map[string]void
-	retrieveGroupMemberships       bool
 	skipAuthzForNonAADUsers        bool
 	allowNonResDiscoveryPathAccess bool
 	lock                           sync.RWMutex
@@ -97,7 +96,6 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, opts aut
 		tokenProvider:                  tokenProvider,
 		azureResourceId:                opts.ResourceId,
 		armCallLimit:                   opts.ARMCallLimit,
-		retrieveGroupMemberships:       opts.AuthzResolveGroupMemberships,
 		skipAuthzForNonAADUsers:        opts.SkipAuthzForNonAADUsers,
 		allowNonResDiscoveryPathAccess: opts.AllowNonResDiscoveryPathAccess,
 	}
@@ -207,7 +205,7 @@ func (a *AccessInfo) setReqHeaders(req *http.Request) {
 }
 
 func (a *AccessInfo) CheckAccess(request *authzv1beta1.SubjectAccessReviewSpec) (*authzv1beta1.SubjectAccessReviewStatus, error) {
-	checkAccessBody, err := prepareCheckAccessRequestBody(request, a.clusterType, a.azureResourceId, a.retrieveGroupMemberships)
+	checkAccessBody, err := prepareCheckAccessRequestBody(request, a.clusterType, a.azureResourceId)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "error in preparing check access request")
