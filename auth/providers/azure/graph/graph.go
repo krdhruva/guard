@@ -40,7 +40,7 @@ var (
 	expandedGroupsPerCall = 500
 
 	getMemberGroupsFailed = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "guard_graph_failure_total",
+		Name: "guard_azure_graph_failure_total",
 		Help: "Azure graph getMemberGroups call failed.",
 	})
 )

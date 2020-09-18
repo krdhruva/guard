@@ -77,7 +77,7 @@ type AccessInfo struct {
 
 var (
 	checkAccessFailed = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "guard_checkaccess_throttling_failure_total",
+		Name: "guard_azure_checkaccess_throttling_failure_total",
 		Help: "Azure checkaccess call throttled.",
 	})
 )

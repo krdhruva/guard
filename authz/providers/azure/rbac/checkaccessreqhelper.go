@@ -27,14 +27,13 @@ import (
 )
 
 const (
-	AccessAllowedVerdict            = "Access allowed"
-	Allowed                         = "allowed"
-	AccessNotAllowedVerdict         = "User does not have access to the resource in Azure. Update role assignment to allow access."
-	namespaces                      = "namespaces"
-	NotAllowedForNonAADUsers        = "Access denied by Azure RBAC for non AAD users. Configure --azure.skip-authz-for-non-aad-users to enable access."
-	NoOpinionVerdict                = "Azure does not have opinion for this user."
-	NonAADUserNoOpVerdict           = "Azure does not have opinion for this user. If you are a non AAD user, --azure.skip-authz-for-non-aad-users must be set to true. If you are an AAD user, no opinion is usually seen for 'can-i' requests."
-	SkipAuthzCheckNotAllowedVerdict = "Access denied by Azure RBAC for non AAD users. Configure --azure.skip-authz-for-non-aad-users to enable access. If you are an AAD user, please set Extra:oid parameter for impersonated user in the kubeconfig."
+	AccessAllowedVerdict        = "Access allowed"
+	Allowed                     = "allowed"
+	AccessNotAllowedVerdict     = "User does not have access to the resource in Azure. Update role assignment to allow access."
+	namespaces                  = "namespaces"
+	NoOpinionVerdict            = "Azure does not have opinion for this user."
+	NonAADUserNoOpVerdict       = "Azure does not have opinion for this non AAD user. If you are an AAD user, please set Extra:oid parameter for impersonated user in the kubeconfig"
+	NonAADUserNotAllowedVerdict = "Access denied by Azure RBAC for non AAD users. Configure --azure.skip-authz-for-non-aad-users to enable access. If you are an AAD user, please set Extra:oid parameter for impersonated user in the kubeconfig."
 )
 
 type SubjectInfoAttributes struct {

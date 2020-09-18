@@ -107,7 +107,7 @@ func writeAuthzResponse(w http.ResponseWriter, spec *authzv1beta1.SubjectAccessR
 	w.WriteHeader(http.StatusOK)
 	if glog.V(7) {
 		if _, ok := spec.Extra["oid"]; ok {
-			data, _ := json.MarshalIndent(resp, "", "  ")
+			data, _ := json.Marshal(resp)
 			glog.V(7).Infof("final data:%s", string(data))
 		}
 	}

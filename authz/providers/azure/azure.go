@@ -93,11 +93,9 @@ func (s Authorizer) Check(request *authzv1beta1.SubjectAccessReviewSpec, store a
 
 	if _, ok := request.Extra["oid"]; !ok {
 		if s.rbacClient.ShouldSkipAuthzCheckForNonAADUsers() {
-			glog.V(3).Infof("Skip RBAC is set for non AAD users. Returning no opinion for user %s. You may observe this for AAD users for 'can-i' requests.", request.User)
 			return &authzv1beta1.SubjectAccessReviewStatus{Allowed: false, Reason: rbac.NonAADUserNoOpVerdict}, nil
 		} else {
-			glog.V(3).Infof("Skip RBAC for non AAD user is not set. Returning deny access for non AAD user %s. You may observe this for AAD users for 'can-i' requests.", request.User)
-			return &authzv1beta1.SubjectAccessReviewStatus{Allowed: false, Denied: true, Reason: rbac.SkipAuthzCheckNotAllowedVerdict}, nil
+			return &authzv1beta1.SubjectAccessReviewStatus{Allowed: false, Denied: true, Reason: rbac.NonAADUserNotAllowedVerdict}, nil
 		}
 	}
 
@@ -110,6 +108,7 @@ func (s Authorizer) Check(request *authzv1beta1.SubjectAccessReviewSpec, store a
 			return &authzv1beta1.SubjectAccessReviewStatus{Allowed: result, Denied: true, Reason: rbac.AccessNotAllowedVerdict}, nil
 		}
 	}
+
 	// if set true, webhook will allow access to discovery APIs for authenticated users. If false, access check will be performed on Azure.
 	if s.rbacClient.AllowNonResPathDiscoveryAccess(request) {
 		glog.V(10).Infof("Allowing user %s access for discovery check.", request.User)
