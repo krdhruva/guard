@@ -65,7 +65,7 @@ func newDeployment(authopts AuthOptions, authzopts AuthzOptions) (objects []runt
 							Image: fmt.Sprintf("%s/guard:%v", authopts.PrivateRegistry, stringz.Val(v.Version.Version, "canary")),
 							Args: []string{
 								"run",
-								"--v=3",
+							        fmt.Sprintf("--v=%s", authopts.VerbosityLevel),
 							},
 							Ports: []core.ContainerPort{
 								{
