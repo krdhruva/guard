@@ -85,7 +85,7 @@ func NewAuthzOptions() AuthzOptions {
 }
 
 func (o *AuthOptions) AddFlags(fs *pflag.FlagSet) {
-        fs.StringVar(&o.VerbosityLevel, "v", o.VerbosityLevel, "Log level for V logs")
+	fs.StringVar(&o.VerbosityLevel, "v", o.VerbosityLevel, "Log level for V logs")
 	fs.StringVar(&o.PkiDir, "pki-dir", o.PkiDir, "Path to directory where pki files are stored.")
 	fs.StringVarP(&o.Namespace, "namespace", "n", o.Namespace, "Name of Kubernetes namespace used to run guard server.")
 	fs.StringVar(&o.Addr, "addr", o.Addr, "Address (host:port) of guard server.")

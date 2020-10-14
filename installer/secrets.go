@@ -54,8 +54,8 @@ func newProxyCertSecret(namespace string, proxyCert string) (runtime.Object, err
 			Labels:    labels,
 		},
 		Type: core.SecretTypeOpaque,
-		StringData: map[string]string{
-			"proxy-cert.crt": string(cert),
+		Data: map[string][]byte{
+			"proxy-cert.crt": cert,
 		},
 	}, nil
 }

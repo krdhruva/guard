@@ -65,7 +65,7 @@ func newDeployment(authopts AuthOptions, authzopts AuthzOptions) (objects []runt
 							Image: fmt.Sprintf("%s/guard:%v", authopts.PrivateRegistry, stringz.Val(v.Version.Version, "canary")),
 							Args: []string{
 								"run",
-							        fmt.Sprintf("--v=%s", authopts.VerbosityLevel),
+								fmt.Sprintf("--v=%s", authopts.VerbosityLevel),
 							},
 							Ports: []core.ContainerPort{
 								{
@@ -163,9 +163,10 @@ func newDeployment(authopts AuthOptions, authzopts AuthzOptions) (objects []runt
 					Command: []string{
 						"sh",
 						"-c",
-						"|",
-						"apk add --update bash curl",
-						"update-ca-certificates",
+						`|
+						 apk add --update bash curl
+						 update-ca-certificates
+						 `,
 					},
 					EnvFrom: []core.EnvFromSource{
 						{
