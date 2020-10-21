@@ -80,7 +80,7 @@ var (
 		Name: "guard_azure_checkaccess_throttling_failure_total",
 		Help: "Azure checkaccess call throttled.",
 	})
-	noOfCheckAccessCalls = promauto.NewCounter(prometheus.CounterOpts{
+	checkAccessTotal = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "guard_azure_check_access_requests_total",
 		Help: "Azure number of checkaccess request calls.",
 	})
@@ -282,7 +282,7 @@ func (a *AccessInfo) CheckAccess(request *authzv1beta1.SubjectAccessReviewSpec) 
 		return nil, errors.Wrap(err, "error in check access request execution")
 	}
 
-	noOfCheckAccessCalls.Inc()
+	checkAccessTotal.Inc()
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -295,12 +295,12 @@ func (a *AccessInfo) CheckAccess(request *authzv1beta1.SubjectAccessReviewSpec) 
 		glog.Errorf("error in check access response. error code: %d, response: %s", resp.StatusCode, string(data))
 		// metrics for calls with StatusCode >= 300
 		if resp.StatusCode >= http.StatusMultipleChoices {
-			glog.V(10).Infoln("Closing idle TCP connections.")
 			if resp.StatusCode == http.StatusTooManyRequests {
+				glog.V(10).Infoln("Closing idle TCP connections.")
+				a.client.CloseIdleConnections()
 				checkAccessThrottled.Inc()
 			}
 
-			a.client.CloseIdleConnections()
 			checkAccessFailed.Inc()
 		}
 		return nil, errors.Errorf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))

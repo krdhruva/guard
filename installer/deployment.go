@@ -158,15 +158,12 @@ func newDeployment(authopts AuthOptions, authzopts AuthzOptions) (objects []runt
 			optionalSecret := false
 			initContainer := []core.Container{
 				{
-					Name:  "add-certs",
-					Image: "alpine:3.10.3",
+					Name:  "update-proxy-certs",
+					Image: "nginx:stable-alpine",
 					Command: []string{
 						"sh",
 						"-c",
-						`|
-						 apk add --update bash curl
-						 update-ca-certificates
-						 `,
+						"update-ca-certificates",
 					},
 					EnvFrom: []core.EnvFromSource{
 						{

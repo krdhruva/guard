@@ -33,10 +33,10 @@ func newProxySecret(namespace string, httpsProxy string, httpProxy string, noPro
 			Labels:    labels,
 		},
 		Type: core.SecretTypeOpaque,
-		StringData: map[string]string{
-			"HTTP_PROXY":  httpProxy,
-			"HTTPS_PROXY": httpsProxy,
-			"NO_PROXY":    noProxy,
+		Data: map[string][]byte{
+			"HTTP_PROXY":  []byte(httpProxy),
+			"HTTPS_PROXY": []byte(httpsProxy),
+			"NO_PROXY":    []byte(noProxy),
 		},
 	}
 }
