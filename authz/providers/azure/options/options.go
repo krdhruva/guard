@@ -37,6 +37,7 @@ type Options struct {
 	ResourceId                     string
 	AKSAuthzTokenURL               string
 	ARMCallLimit                   int
+	SkipAuthzCheck 				   []string
 	SkipAuthzCheckConfig           string
 	SkipAuthzForNonAADUsers        bool
 	AllowNonResDiscoveryPathAccess bool
@@ -45,6 +46,7 @@ type Options struct {
 func NewOptions() Options {
 	return Options{
 		ARMCallLimit:                   defaultArmCallLimit,
+		SkipAuthzCheck: 				[]string{""},
 		SkipAuthzCheckConfig:           "",
 		SkipAuthzForNonAADUsers:        true,
 		AllowNonResDiscoveryPathAccess: true}
@@ -55,6 +57,7 @@ func (o *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.ResourceId, "azure.resource-id", "", "azure cluster resource id (//subscription/<subName>/resourcegroups/<RGname>/providers/Microsoft.ContainerService/managedClusters/<clustername> for AKS or //subscription/<subName>/resourcegroups/<RGname>/providers/Microsoft.Kubernetes/connectedClusters/<clustername> for arc) to be used as scope for RBAC check")
 	fs.StringVar(&o.AKSAuthzTokenURL, "azure.aks-authz-token-url", "", "url to call for AKS Authz flow")
 	fs.IntVar(&o.ARMCallLimit, "azure.arm-call-limit", o.ARMCallLimit, "No of calls before which webhook switch to new ARM instance to avoid throttling")
+	fs.StringSliceVar(&o.SkipAuthzCheck, "azure.skip-authz-check", o.SkipAuthzCheck, "name of usernames/email for which authz check will be skipped")
 	fs.StringVar(&o.SkipAuthzCheckConfig, "azure.skip-authz-check-config", o.SkipAuthzCheckConfig, "path of config file which contains names of usernames/email. Azure Authz check will be skipped for these users")
 	fs.BoolVar(&o.SkipAuthzForNonAADUsers, "azure.skip-authz-for-non-aad-users", o.SkipAuthzForNonAADUsers, "skip authz for non AAD users")
 	fs.BoolVar(&o.AllowNonResDiscoveryPathAccess, "azure.allow-nonres-discovery-path-access", o.AllowNonResDiscoveryPathAccess, "allow access on Non Resource paths required for discovery, setting it false will require explicit non resource path role assignment for all users in Azure RBAC")
@@ -111,6 +114,10 @@ func (o Options) Apply(d *apps.Deployment) (extraObjs []runtime.Object, err erro
 
 	if o.AKSAuthzTokenURL != "" {
 		args = append(args, fmt.Sprintf("--azure.aks-authz-token-url=%s", o.AKSAuthzTokenURL))
+	}
+
+	if len(o.SkipAuthzCheck) > 0 {
+		args = append(args, fmt.Sprintf("--azure.skip-authz-check=%s", strings.Join(o.SkipAuthzCheck, ",")))
 	}
 
 	if o.SkipAuthzCheckConfig != "" {
