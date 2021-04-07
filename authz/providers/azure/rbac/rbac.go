@@ -130,6 +130,12 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, opts aut
 		skipCheckConfig:                opts.SkipAuthzCheckConfig,
 	}
 
+	u.skipCheck = make(map[string]void, len(opts.SkipAuthzCheck))
+	var member void
+	for _, s := range opts.SkipAuthzCheck {
+		u.skipCheck[strings.ToLower(s)] = member
+	}
+
 	u.clusterType = getClusterType(opts.AuthzMode)
 	u.lock = sync.RWMutex{}
 
@@ -157,29 +163,18 @@ func New(opts authzOpts.Options, authopts auth.Options, authzInfo *AuthzInfo) (*
 }
 
 func (a *AccessInfo) loadAuthzConfig() error {
-	glog.Info("Inside load authz config")
-	if a.skipCheckConfig != "" {
-		a.configLock.Lock()
-		defer a.configLock.Unlock()
-		data, err := LoadConfigFile(a.skipCheckConfig)
-		if err != nil {
-			glog.Fatal(err)
-		}
-		a.skipCheck = data
-	}
-	return nil
-}
-
-func LoadConfigFile(file string) (map[string]void, error) {
-	csvFile, err := os.Open(file)
+	a.configLock.Lock()
+	defer a.configLock.Unlock()
+	glog.Info("reload skip authz config from file")
+	csvFile, err := os.Open(a.skipCheckConfig)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer csvFile.Close()
 
 	reader := csv.NewReader(bufio.NewReader(csvFile))
 	reader.FieldsPerRecord = -1
-	data := map[string]void{}
+	var data []string
 	for {
 		record, err := reader.Read()
 		if err == io.EOF {
@@ -187,32 +182,40 @@ func LoadConfigFile(file string) (map[string]void, error) {
 		} else if err != nil {
 			return nil, errors.Wrap(err, "failed to parse skip authz config file ")
 		}
-		var member void
 		for _, s := range record {
-			glog.Infof("adding user in skip list: %s", s)
-			data[strings.ToLower(s)] = member
+			if _, ok := a.skipCheck[string.ToLower(s)]; !ok {
+				var member void
+				glog.Infof("adding user in skip list: %s", s)
+				a.skipCheck[strings.ToLower(s)] = member
+			} else {
+				glog.Infof("User %s already present in skip list. Skipping.", s)
+			}				
 		}
 	}
-	return data, nil
+	return nil
 }
 
 func (a *AccessInfo) InitSkipAuthzConfig() {
-	glog.Info("Init config skip check")
-	err := a.loadAuthzConfig()
-	if err != nil {
-		glog.Fatal(err)
-	}
-	w := fsnotify.Watcher{
-		WatchDir: filepath.Dir(a.skipCheckConfig),
-		Reload: func() error {
-			return a.loadAuthzConfig()
-		},
-	}
-	stopCh := signals.SetupSignalHandler()
-	err = w.Run(stopCh)
-	if err != nil {
-		glog.Fatal(err)
-	}
+	if a.skipCheckConfig != "" {
+		glog.Info("Init config skip check")
+		err := a.loadAuthzConfig()
+		if err != nil {
+			glog.Fatal(err)
+		}
+		w := fsnotify.Watcher{
+			WatchDir: filepath.Dir(a.skipCheckConfig),
+			Reload: func() error {
+				return a.loadAuthzConfig()
+			},
+		}
+		stopCh := signals.SetupSignalHandler()
+		err = w.Run(stopCh)
+		if err != nil {
+			glog.Fatal(err)
+		}
+	} else {
+		glog.Info("config file path not set. Skipping config watcher.")
+	} 
 }
 
 func (a *AccessInfo) RefreshToken() error {
