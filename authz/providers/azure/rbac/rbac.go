@@ -77,7 +77,8 @@ type AccessInfo struct {
 	azureResourceId                string
 	armCallLimit                   int
 	skipCheckConfig                string
-	skipCheck                      map[string]void
+	skipCheckUsers				   []string
+	skipAuthzCheckList             map[string]void
 	skipAuthzForNonAADUsers        bool
 	allowNonResDiscoveryPathAccess bool
 	lock                           sync.RWMutex
@@ -128,12 +129,7 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, opts aut
 		skipAuthzForNonAADUsers:        opts.SkipAuthzForNonAADUsers,
 		allowNonResDiscoveryPathAccess: opts.AllowNonResDiscoveryPathAccess,
 		skipCheckConfig:                opts.SkipAuthzCheckConfig,
-	}
-
-	u.skipCheck = make(map[string]void, len(opts.SkipAuthzCheck))
-	var member void
-	for _, s := range opts.SkipAuthzCheck {
-		u.skipCheck[strings.ToLower(s)] = member
+		skipCheckUsers: 				opts.SkipAuthzCheck,
 	}
 
 	u.clusterType = getClusterType(opts.AuthzMode)
@@ -165,42 +161,54 @@ func New(opts authzOpts.Options, authopts auth.Options, authzInfo *AuthzInfo) (*
 func (a *AccessInfo) loadAuthzConfig() error {
 	a.configLock.Lock()
 	defer a.configLock.Unlock()
-	glog.Info("reload skip authz config from file")
-	csvFile, err := os.Open(a.skipCheckConfig)
-	if err != nil {
-		return err
+	
+	a.skipAuthzCheckList = make(map[string]void, len(a.skipCheckUsers))
+	var member void
+	for _, s := range a.skipCheckUsers {
+		glog.Info("adding user in skip list: %s", s)
+		a.skipAuthzCheckList[strings.ToLower(s)] = member
 	}
-	defer csvFile.Close()
 
-	reader := csv.NewReader(bufio.NewReader(csvFile))
-	reader.FieldsPerRecord = -1
-	for {
-		record, err := reader.Read()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return errors.Wrap(err, "failed to parse skip authz config file ")
+	if a.skipCheckConfig != "" {
+		glog.Info("reload skip authz config from file")
+		csvFile, err := os.Open(a.skipCheckConfig)
+		if err != nil {
+			glog.Info("Failed to open file %s. Error: %+v", a.skipCheckConfig, err)
+			return nil
 		}
-		for _, s := range record {
-			if _, ok := a.skipCheck[strings.ToLower(s)]; !ok {
-				var member void
-				glog.Infof("adding user in skip list: %s", s)
-				a.skipCheck[strings.ToLower(s)] = member
-			} else {
-				glog.Infof("User %s already present in skip list. Skipping.", s)
-			}				
+		defer csvFile.Close()
+
+		reader := csv.NewReader(bufio.NewReader(csvFile))
+		reader.FieldsPerRecord = -1
+		for {
+			record, err := reader.Read()
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				return errors.Wrap(err, "failed to parse skip authz config file ")
+			}
+			for _, s := range record {
+				if _, ok := a.skipAuthzCheckList[strings.ToLower(s)]; !ok {
+					glog.Infof("adding user in skip list: %s", s)
+					a.skipAuthzCheckList[strings.ToLower(s)] = member
+				} else {
+					glog.Infof("User %s already present in skip list. Skipping.", s)
+				}				
+			}
 		}
 	}
 	return nil
 }
 
 func (a *AccessInfo) InitSkipAuthzConfig() {
+	
+	glog.Info("Init config skip check")
+	err := a.loadAuthzConfig()
+	if err != nil {
+		glog.Fatal(err)
+	}
+
 	if a.skipCheckConfig != "" {
-		glog.Info("Init config skip check")
-		err := a.loadAuthzConfig()
-		if err != nil {
-			glog.Fatal(err)
-		}
 		w := fsnotify.Watcher{
 			WatchDir: filepath.Dir(a.skipCheckConfig),
 			Reload: func() error {
@@ -266,7 +274,7 @@ func (a *AccessInfo) SkipAuthzCheck(request *authzv1.SubjectAccessReviewSpec) bo
 	if a.clusterType == connectedClusters {
 		a.configLock.RLock()
 		defer a.configLock.RUnlock()
-		_, ok := a.skipCheck[strings.ToLower(request.User)]
+		_, ok := a.skipAuthzCheckList[strings.ToLower(request.User)]
 		return ok
 	}
 	return false
