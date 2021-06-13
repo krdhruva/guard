@@ -35,9 +35,14 @@ const (
 )
 
 var (
-	once   sync.Once
-	client authz.Interface
-	err    error
+	once         sync.Once
+	client       authz.Interface
+	err          error
+	AzureDogfood = azure.Environment{
+		Name:                    "AzureDogfood",
+		ResourceManagerEndpoint: "https://management.core.windows.net/",
+		ActiveDirectoryEndpoint: "https://login.windows-ppe.net",
+	}
 )
 
 func init() {
@@ -136,7 +141,9 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec, store authz.
 func getAuthzInfo(environment string) (*rbac.AuthzInfo, error) {
 	var err error
 	env := azure.PublicCloud
-	if environment != "" {
+	if environment == "AZUREDOGFOOD" {
+		env = AzureDogfood
+	} else if environment != "" {
 		env, err = azure.EnvironmentFromName(environment)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse environment for azure")
