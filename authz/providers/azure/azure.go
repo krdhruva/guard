@@ -144,5 +144,6 @@ func getAuthzInfo(environment string) (*rbac.AuthzInfo, error) {
 	return &rbac.AuthzInfo{
 		AADEndpoint: env.ActiveDirectoryEndpoint,
 		ARMEndPoint: env.ResourceManagerEndpoint,
+		ARMAudience: env.TokenAudience,
 	}, nil
 }

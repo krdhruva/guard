@@ -58,6 +58,7 @@ type AuthorizationEntity struct {
 type AuthorizationActionInfo struct {
 	AuthorizationEntity
 	IsDataAction bool `json:"IsDataAction"`
+	Attributes   map[string]string `json:"Attributes"`
 }
 
 type CheckAccessRequest struct {
@@ -162,6 +163,7 @@ func getActionName(verb string) string {
 
 	https://kubernetes.io/docs/reference/access-authn-authz/authorization/#determine-the-request-verb
 	*/
+
 	switch verb {
 	case "get":
 		fallthrough
@@ -195,16 +197,37 @@ func getActionName(verb string) string {
 	}
 }
 
+func getResourceAndAction(subRevReq *authzv1.SubjectAccessReviewSpec) string {
+	action := subRevReq.ResourceAttributes.Resource
+	if subRevReq.ResourceAttributes.Resource == "pods" &&  subRevReq.ResourceAttributes.Subresource == "exec" {
+		action = path.Join(subRevReq.ResourceAttributes.Resource, subRevReq.ResourceAttributes.Subresource, "action")
+	} else {
+		action = path.Join(subRevReq.ResourceAttributes.Resource, getActionName(subRevReq.ResourceAttributes.Verb))
+        }
+
+	return action
+}
+
 func getDataAction(subRevReq *authzv1.SubjectAccessReviewSpec, clusterType string) AuthorizationActionInfo {
 	authInfo := AuthorizationActionInfo{
 		IsDataAction: true}
 
 	authInfo.AuthorizationEntity.Id = clusterType
 	if subRevReq.ResourceAttributes != nil {
-		if subRevReq.ResourceAttributes.Group != "" {
-			authInfo.AuthorizationEntity.Id = path.Join(authInfo.AuthorizationEntity.Id, subRevReq.ResourceAttributes.Group)
+		if subRevReq.ResourceAttributes.Group == "stable.example.com" {
+		        authInfo.AuthorizationEntity.Id = path.Join(authInfo.AuthorizationEntity.Id, "customresources", getActionName(subRevReq.ResourceAttributes.Verb))
+			authInfo.Attributes = map[string]string{
+			    "CrdApigroups": subRevReq.ResourceAttributes.Group,
+			    "CrdNames": subRevReq.ResourceAttributes.Resource,
+			}
+
+		} else {
+			if subRevReq.ResourceAttributes.Group != "" {
+                            authInfo.AuthorizationEntity.Id = path.Join(authInfo.AuthorizationEntity.Id, subRevReq.ResourceAttributes.Group)
+                        }
+			action := getResourceAndAction(subRevReq)
+		        authInfo.AuthorizationEntity.Id = path.Join(authInfo.AuthorizationEntity.Id, action)
 		}
-		authInfo.AuthorizationEntity.Id = path.Join(authInfo.AuthorizationEntity.Id, subRevReq.ResourceAttributes.Resource, getActionName(subRevReq.ResourceAttributes.Verb))
 	} else if subRevReq.NonResourceAttributes != nil {
 		authInfo.AuthorizationEntity.Id = path.Join(authInfo.AuthorizationEntity.Id, subRevReq.NonResourceAttributes.Path, getActionName(subRevReq.NonResourceAttributes.Verb))
 	}
