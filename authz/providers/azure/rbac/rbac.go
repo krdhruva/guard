@@ -264,6 +264,8 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 		klog.V(10).Infof("binary data:%s", binaryData)
 	}
 
+
+	klog.Infof("Start time %s", (time.Now()).String())
 	req, err := http.NewRequest(http.MethodPost, checkAccessURL.String(), buf)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating check access request")
@@ -281,6 +283,8 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	if err != nil {
 		return nil, errors.Wrap(err, "error in check access request execution")
 	}
+
+	klog.Infof("End point %s", (time.Now()).String())
 
 	checkAccessTotal.Inc()
 
@@ -319,6 +323,8 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 		}
 		checkAccessSucceeded.Inc()
 	}
+
+	time.Sleep(10 * time.Second)
 
 	// Decode response and prepare k8s response
 	return ConvertCheckAccessResponse(data)
