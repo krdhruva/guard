@@ -127,7 +127,11 @@ func (s Authorizer) Check(request *authzv1.SubjectAccessReviewSpec, store authz.
 		glog.V(5).Infof(response.Reason)
 		_ = s.rbacClient.SetResultInCache(request, response.Allowed, store)
 	} else {
-		_ = s.rbacClient.SetResultInCache(request, false, store)
+		// store in cache only if it is a 429 error or a non Http error
+		var e *rbac.HttpError
+		if (errors.As(err, &e) && e.Code == 429) || !errors.As(err, &e) {
+			_ = s.rbacClient.SetResultInCache(request, false, store)
+		}
 	}
 
 	return response, err

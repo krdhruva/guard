@@ -62,6 +62,15 @@ type AuthzInfo struct {
 	ARMEndPoint string
 }
 
+type HttpError struct {
+	Message string
+	Code    int
+}
+
+func (e *HttpError) Error() string {
+	return e.Message
+}
+
 type void struct{}
 
 // AccessInfo allows you to check user access from MS RBAC
@@ -369,7 +378,10 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 
 			checkAccessFailed.Inc()
 		}
-		return nil, errors.Errorf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data))
+		return nil, &HttpError{
+			Message: fmt.Sprintf("request %s failed with status code: %d and response: %s", req.URL.Path, resp.StatusCode, string(data)),
+			Code:    resp.StatusCode,
+		}
 	} else {
 		remaining := resp.Header.Get(remainingSubReadARMHeader)
 		glog.Infof("Remaining request count in ARM instance:%s", remaining)
