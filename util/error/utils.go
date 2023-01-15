@@ -43,6 +43,10 @@ func (w *withCode) Error() string { return w.cause.Error() }
 func (w *withCode) Cause() error  { return w.cause }
 func (w *withCode) Code() int     { return w.code }
 
+type HttpStatusCode interface {
+	Code() int
+}
+
 func (w *withCode) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':

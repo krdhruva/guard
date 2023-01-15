@@ -17,8 +17,6 @@ limitations under the License.
 package server
 
 import (
-	"fmt"
-	"io"
 	"net/http"
 
 	jsoniter "github.com/json-iterator/go"
@@ -26,6 +24,7 @@ import (
 	auth "k8s.io/api/authentication/v1"
 	authzv1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	errutils "go.kubeguard.dev/guard/util/error"
 	"k8s.io/klog/v2"
 )
 
@@ -47,7 +46,7 @@ func write(w http.ResponseWriter, info *auth.UserInfo, err error) {
 
 	if err != nil {
 		code := http.StatusUnauthorized
-		if v, ok := err.(httpStatusCode); ok {
+		if v, ok := err.(errutils.HttpStatusCode); ok {
 			code = v.Code()
 		}
 		printStackTrace(err)
@@ -99,13 +98,15 @@ func writeAuthzResponse(w http.ResponseWriter, spec *authzv1.SubjectAccessReview
 		}
 		resp.Status = accessInfo
 	}
-
+	code := http.StatusOK
 	if err != nil {
-		w.WriteHeader(err.Code())
+		if v, ok := err.(errutils.HttpStatusCode); ok {
+			code = v.Code()
+		}
 		printStackTrace(err)
-	} else {
-		w.WriteHeader(http.StatusOK)
 	}
+
+	w.WriteHeader(code)
 
 	if klog.V(7).Enabled() {
 		if _, ok := spec.Extra["oid"]; ok {
@@ -122,10 +123,6 @@ func writeAuthzResponse(w http.ResponseWriter, spec *authzv1.SubjectAccessReview
 
 type stackTracer interface {
 	StackTrace() errors.StackTrace
-}
-
-type httpStatusCode interface {
-	Code() int
 }
 
 func printStackTrace(err error) {
