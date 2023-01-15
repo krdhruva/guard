@@ -36,11 +36,11 @@ import (
 	azureutils "go.kubeguard.dev/guard/util/azure"
 	errutils "go.kubeguard.dev/guard/util/error"
 	"go.kubeguard.dev/guard/util/httpclient"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"golang.org/x/sync/errgroup"
 	v "gomodules.xyz/x/version"
 	authzv1 "k8s.io/api/authorization/v1"
 	"k8s.io/klog/v2"
@@ -313,8 +313,9 @@ func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*aut
 	}
 	eg.SetLimit(len(checkAccessBodies))
 	for _, checkAccessBody := range checkAccessBodies {
+		body := checkAccessBody
 		eg.Go(func() error {
-			err := a.sendCheckAccessRequest(egCtx, checkAccessURL, checkAccessBody, ch)
+			err := a.sendCheckAccessRequest(egCtx, checkAccessURL, body, ch)
 			return err
 		})
 	}

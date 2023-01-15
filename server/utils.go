@@ -19,12 +19,13 @@ package server
 import (
 	"net/http"
 
+	errutils "go.kubeguard.dev/guard/util/error"
+
 	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 	auth "k8s.io/api/authentication/v1"
 	authzv1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	errutils "go.kubeguard.dev/guard/util/error"
 	"k8s.io/klog/v2"
 )
 

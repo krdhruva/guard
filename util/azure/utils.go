@@ -25,13 +25,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"go.kubeguard.dev/guard/auth/providers/azure/graph"
 	"go.kubeguard.dev/guard/util/httpclient"
 
 	"github.com/Azure/go-autorest/autorest/azure"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	v "gomodules.xyz/x/version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
