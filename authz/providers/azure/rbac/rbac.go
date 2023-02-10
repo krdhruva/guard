@@ -86,7 +86,6 @@ type AccessInfo struct {
 	allowNonResDiscoveryPathAccess  bool
 	useNamespaceResourceScopeFormat bool
 	lock                            sync.RWMutex
-	operationsMap                   azureutils.OperationsMap
 }
 
 var (
@@ -155,7 +154,7 @@ func getClusterType(clsType string) string {
 	}
 }
 
-func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, opts authzOpts.Options, operationsMap azureutils.OperationsMap) (*AccessInfo, error) {
+func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, opts authzOpts.Options) (*AccessInfo, error) {
 	u := &AccessInfo{
 		client: httpclient.DefaultHTTPClient,
 		headers: http.Header{
@@ -179,14 +178,12 @@ func newAccessInfo(tokenProvider graph.TokenProvider, rbacURL *url.URL, opts aut
 
 	u.clusterType = getClusterType(opts.AuthzMode)
 
-	u.operationsMap = operationsMap
-
 	u.lock = sync.RWMutex{}
 
 	return u, nil
 }
 
-func New(opts authzOpts.Options, authopts auth.Options, authzInfo *AuthzInfo, operationsMap azureutils.OperationsMap) (*AccessInfo, error) {
+func New(opts authzOpts.Options, authopts auth.Options, authzInfo *AuthzInfo) (*AccessInfo, error) {
 	rbacURL, err := url.Parse(authzInfo.ARMEndPoint)
 	if err != nil {
 		return nil, err
@@ -204,7 +201,7 @@ func New(opts authzOpts.Options, authopts auth.Options, authzInfo *AuthzInfo, op
 		tokenProvider = graph.NewAKSTokenProvider(opts.AKSAuthzTokenURL, authopts.TenantID)
 	}
 
-	return newAccessInfo(tokenProvider, rbacURL, opts, operationsMap)
+	return newAccessInfo(tokenProvider, rbacURL, opts)
 }
 
 func (a *AccessInfo) RefreshToken() error {
@@ -290,7 +287,7 @@ func (a *AccessInfo) setReqHeaders(req *http.Request) {
 }
 
 func (a *AccessInfo) CheckAccess(request *authzv1.SubjectAccessReviewSpec) (*authzv1.SubjectAccessReviewStatus, error) {
-	checkAccessBodies, err := prepareCheckAccessRequestBody(request, a.clusterType, a.operationsMap, a.azureResourceId, a.useNamespaceResourceScopeFormat)
+	checkAccessBodies, err := prepareCheckAccessRequestBody(request, a.clusterType, a.azureResourceId, a.useNamespaceResourceScopeFormat)
 	if err != nil {
 		return nil, errors.Wrap(err, "error in preparing check access request")
 	}
