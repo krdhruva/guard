@@ -69,6 +69,13 @@ var (
 			Buckets: []float64{.25, .5, 1, 2.5, 5, 10, 15, 20},
 		})
 
+	deepcopyduration = prometheus.NewHistogram(
+		prometheus.HistogramOpts{
+			Name:    "guard_deepcopy_request_duration_seconds",
+			Help:    "A histogram of latencies for apiserver requests.",
+			Buckets: []float64{.05, .1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4},
+		})
+
 	discoverResourcesAzureCallDuration = prometheus.NewHistogram(
 		prometheus.HistogramOpts{
 			Name:    "guard_azure_get_operations_request_duration_seconds",
@@ -181,6 +188,7 @@ func NewOperationsMap() OperationsMap {
 }
 
 func DeepCopyOperationsMap() OperationsMap {
+	start := time.Now()
 	operationsMapLock.RLock()
 	defer operationsMapLock.RUnlock()
 	if len(operationsMap) == 0 {
@@ -191,6 +199,9 @@ func DeepCopyOperationsMap() OperationsMap {
 	for k, v := range operationsMap {
 		copyMap[k] = v
 	}
+
+	deepcopydurationSec := time.Since(start).Seconds()
+	deepcopyduration.Observe(deepcopydurationSec)
 
 	return copyMap
 }
@@ -298,6 +309,7 @@ func DiscoverResources() error {
 	discoverResourcesAzureCallDuration.Observe(getOperationsDuration)
 
 	createOperationsMap(apiResourcesList, operationsList)
+	klog.V(5).Infof("Operations Map length: %d", len(operationsMap))
 
 	klog.V(5).Infof("Operations Map created for resources: %s", operationsMap)
 
@@ -503,5 +515,5 @@ func fetchDataActionsList() ([]Operation, error) {
 }
 
 func init() {
-	prometheus.MustRegister(DiscoverResourcesTotalDuration, discoverResourcesAzureCallDuration, discoverResourcesApiServerCallDuration, counterDiscoverResources, counterGetOperationsResources)
+	prometheus.MustRegister(deepcopyduration, DiscoverResourcesTotalDuration, discoverResourcesAzureCallDuration, discoverResourcesApiServerCallDuration, counterDiscoverResources, counterGetOperationsResources)
 }
