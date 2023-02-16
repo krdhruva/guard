@@ -62,6 +62,7 @@ const (
 type AuthzInfo struct {
 	AADEndpoint string
 	ARMEndPoint string
+	ARMAudience string
 }
 
 type (
@@ -194,7 +195,7 @@ func New(opts authzOpts.Options, authopts auth.Options, authzInfo *AuthzInfo) (*
 	case authzOpts.ARCAuthzMode:
 		tokenProvider = graph.NewClientCredentialTokenProvider(authopts.ClientID, authopts.ClientSecret,
 			fmt.Sprintf("%s%s/oauth2/v2.0/token", authzInfo.AADEndpoint, authopts.TenantID),
-			fmt.Sprintf("%s.default", authzInfo.ARMEndPoint))
+			fmt.Sprintf("%s.default", authzInfo.ARMAudience))
 	case authzOpts.FleetAuthzMode:
 		tokenProvider = graph.NewAKSTokenProvider(opts.AKSAuthzTokenURL, authopts.TenantID)
 	case authzOpts.AKSAuthzMode:

@@ -451,7 +451,7 @@ func fetchDataActionsList() ([]Operation, error) {
 	if settings.clusterType == ConnectedClusters {
 		tokenProvider := graph.NewClientCredentialTokenProvider(settings.clientID, settings.clientSecret,
 			fmt.Sprintf("%s%s/oauth2/v2.0/token", settings.environment.ActiveDirectoryEndpoint, settings.tenantID),
-			fmt.Sprintf("%s/.default", settings.environment.ResourceManagerEndpoint))
+			fmt.Sprintf("%s/.default", settings.environment.TokenAudience))
 
 		authResp, erro := tokenProvider.Acquire("")
 		if erro != nil {
